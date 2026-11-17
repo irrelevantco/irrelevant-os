@@ -7,7 +7,7 @@
 - **research_plan:** deterministic three-pillar checklist plus five qualification evidence criteria. Creates no audit findings, numeric qualification scores or budget assumptions.
 - **outreach_draft:** uses verified, source-backed points from an owner-approved current Growth Review. Sender name/email/postal address required. Result is a separate proposal, never an immediate overwrite.
 - **follow_up:** same evidence gate; latest manually logged contact must be outbound email/call at least three days old. Later replies/opt-outs cancel pending follow-ups. At most three follow-up proposals can be accepted for a lead. These are preparation caps, not sent-message counts.
-- **discovery:** defaults to free OpenStreetMap through Private.coffee, without an API key. Fixed US municipality/trade filters, 1–10 results, at most three requests/day/organization and a one-minute enqueue/execution cooldown. Zero Explee credits does not block this provider. Optional Explee still requires its server key, paid allowance and request confirmation. All candidates require a separate normal import preview/commit.
+- **discovery:** defaults to free OpenStreetMap through ovp.dresel.systems (North America), without an API key. Fixed US municipality/trade filters, 1–10 results, at most three requests/day/organization and a one-minute enqueue/execution cooldown. Zero Explee credits does not block this provider. Optional Explee still requires its server key, paid allowance and request confirmation. All candidates require a separate normal import preview/commit.
 
 No LLM, Gmail, Calendar, email delivery, call placing, content publication or billing capability is implemented. Provider `rules-v1` is an honest template baseline. Nothing infers contact from a CRM status or draft creation.
 
@@ -15,9 +15,9 @@ No LLM, Gmail, Calendar, email delivery, call placing, content publication or bi
 
 Choose **Resume free preparation**, select an existing prospect and **Research plan**, then **Queue preparation → Run next queued job**. This creates a checklist, not a completed audit. Resume preserves existing sender settings and limits. Add researched evidence to the Growth Review and manually approve it before preparing outreach. Configure sender name, email and postal address before outreach drafts. Follow-ups require a real logged outbound contact, never a draft.
 
-Free discovery sends only city, state and a fixed trade category. It uses a bounded POST, a 25-second deadline and a 1 MB response limit, with no automatic retries or paid fallback. Public-map coverage may be sparse or empty. Network failures do not affect the existing CRM/research workflow. Every result retains its map source and an unverified hypothesis; no budgets or digital weaknesses are inferred.
+Free discovery sends only city, state and a fixed trade category. It uses a bounded POST, a 25-second deadline and a 1 MB response limit and a separate 32 MB query-memory cap, with no automatic retries or paid fallback. Public-map coverage may be sparse or empty. Network failures do not affect the existing CRM/research workflow. Every result retains its map source and an unverified hypothesis; no budgets or digital weaknesses are inferred.
 
-[Private.coffee terms](https://overpass.private.coffee/) permit commercial use without registration, subject to fair resource sharing and privacy obligations. [OpenStreetMap licensing](https://www.openstreetmap.org/copyright) requires attribution and may require share-alike when redistributing derived databases. These sources provide no uptime guarantee. Attribution appears in the workspace and each imported source label.
+The [provider site](https://ovp.dresel.systems/) offers free access without registration; [terms/privacy](https://ovp.dresel.systems/impressum.html) require fair resource sharing and warn that queries/IP addresses are logged for 14 days. Send only the city/state/trade filters. [OpenStreetMap licensing](https://www.openstreetmap.org/copyright) requires attribution and may require share-alike when redistributing derived databases. These sources provide no uptime guarantee. Attribution appears in the workspace and each imported source label.
 
 ## Reliability and authorization
 
@@ -38,3 +38,6 @@ A hosted scheduler can be added later through a reviewed authenticated job syste
 ## Checks
 
 `npm run test:agents` uses a real, explicitly enabled loopback Auth/PostgREST database, with synthetic isolated tenants. It covers RLS, owner permissions, default pause, concurrent idempotency, anonymous denial, leases, bounded retries, evidence gating, stale edits, actual-contact requirements, reply cancellation, opt-outs, credit reservations, ambiguous provider failures and unexpected-charge pause. It makes no paid requests or communications.
+
+
+Version 0.2.3 replaces the initial unreachable Private.coffee endpoint. A live city/trade request against the North America endpoint returned five unverified candidates, with no import. It is a community service, not a guaranteed production backend for future resale; review capacity and terms before broader distribution.

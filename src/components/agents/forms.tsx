@@ -223,11 +223,11 @@ export function DiscoveryForm({
         . Free service:{" "}
         <a
           className="underline"
-          href="https://overpass.private.coffee/"
+          href="https://ovp.dresel.systems/impressum.html"
           target="_blank"
           rel="noopener noreferrer"
         >
-          Private.coffee terms and privacy
+          North America provider terms and privacy
         </a>
         .
       </p>

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { FREE_CATEGORIES, freeDiscoverySchema } from "./discovery-options";
-export const OSM_ENDPOINT = "https://overpass.private.coffee/api/interpreter";
+export const OSM_ENDPOINT = "https://ovp.dresel.systems/api-na/interpreter";
 const responseSchema = z.object({
   remark: z.string().optional(),
   elements: z
@@ -15,7 +15,7 @@ const responseSchema = z.object({
 });
 export function buildOverpassQuery(input: unknown) {
   const query = freeDiscoverySchema.parse(input);
-  return `[out:json][timeout:20][maxsize:1048576];\narea["ISO3166-2"=${JSON.stringify(`US-${query.state}`)}]->.state;\nrel(area.state)["boundary"="administrative"]["admin_level"="8"]["name"=${JSON.stringify(query.city)}];\nmap_to_area->.city;\nnwr(area.city)["craft"=${JSON.stringify(query.category)}]["name"];\nout tags ${query.count};`;
+  return `[out:json][timeout:20][maxsize:33554432];\narea["ISO3166-2"=${JSON.stringify(`US-${query.state}`)}]->.state;\nrel(area.state)["boundary"="administrative"]["admin_level"="8"]["name"=${JSON.stringify(query.city)}];\nmap_to_area->.city;\nnwr(area.city)["craft"=${JSON.stringify(query.category)}]["name"];\nout tags ${query.count};`;
 }
 function publicWebsite(value: string | undefined) {
   if (!value) return "";
@@ -70,7 +70,7 @@ export async function discoverOpenStreetMap(
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
       "User-Agent":
-        "iRRELEVANT-OS/0.2.2 (+https://github.com/irrelevantco/irrelevant-os)",
+        "iRRELEVANT-OS/0.2.3 (+https://github.com/irrelevantco/irrelevant-os)",
     },
     body: new URLSearchParams({ data: buildOverpassQuery(query) }).toString(),
     redirect: "error",
