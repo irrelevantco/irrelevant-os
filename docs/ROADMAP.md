@@ -37,3 +37,7 @@ Client workspaces, onboarding tasks, scopes, private brand assets, content deliv
 ## Public site track
 
 Home foundation exists. Add Services, Growth Partnerships, Our Work, Request a Growth Review, Contact, Privacy and Terms when content, legal terms and intake abuse controls are ready. Review/contact intake will create database leads through a rate-limited server boundary. At Your Request Cleaning may only appear after verified, authorized assets and claims are provided. No fabricated case studies or testimonials.
+
+## Prospect Batch 001 delivered scope
+
+CSV upload/bundled load, mapping, Zod preview, row errors, normalized deduplication, idempotent transactional import, owner scope, preserved unverified research metadata, A/B/C research queue, editable three-point reviews, source/confidence/date fields, manual owner readiness approval and draft-only outreach preparation are implemented. This completes the CSV/manual-research slice of Phases 2/3. Configurable discovery providers, automated qualification scores, AI audit generation/PDFs and Gmail remain unimplemented. See PROSPECT_BATCH_001.md and WINDOWS_SETUP.md.

@@ -1,4 +1,4 @@
-name: Phase 1 checks
+name: Acquisition CRM checks
 on:
   push:
   pull_request:
@@ -22,6 +22,7 @@ jobs:
       - run: npm run local:up
       - run: npm run local:migrate
       - run: npm run test:rls
+      - run: npm run test:imports
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e

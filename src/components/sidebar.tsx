@@ -3,6 +3,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Activity,
+  FileInput,
+  NotebookPen,
+  Mail,
   ArrowUpRight,
   Columns3,
   LayoutDashboard,
@@ -15,6 +18,9 @@ const items = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/leads", label: "Leads", icon: UsersRound },
   { href: "/dashboard/pipeline", label: "Pipeline", icon: Columns3 },
+  { href: "/dashboard/imports", label: "Imports", icon: FileInput },
+  { href: "/dashboard/research", label: "Research", icon: NotebookPen },
+  { href: "/dashboard/outreach", label: "Outreach drafts", icon: Mail },
   { href: "/dashboard/activity", label: "Activity", icon: Activity },
   { href: "/dashboard/settings", label: "Settings", icon: Settings2 },
 ];

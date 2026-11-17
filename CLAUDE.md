@@ -1,6 +1,6 @@
 # iRRELEVANT OS — contributor instructions
 
-Read README.md and docs/ARCHITECTURE.md before changes. Current implementation scope is Phase 1. Preserve the Next.js App Router + TypeScript + Tailwind + source-owned shadcn/ui + Supabase architecture. Framer is not a dependency.
+Read README.md and docs/ARCHITECTURE.md before changes. Current implementation includes Phase 1 plus Prospect Batch 001 CSV import, manual research reviews, evidence/owner approval gates and draft-only preparation. Preserve the Next.js App Router + TypeScript + Tailwind + source-owned shadcn/ui + Supabase architecture. Framer is not a dependency.
 
 - Business goal: roughly one new $3k–$10k service-industry engagement monthly, eventually $25k/year partnerships. These are goals, not claimed results.
 - All business records belong to an organization. RLS is mandatory; never introduce application service-role bypasses.
@@ -16,3 +16,6 @@ Read README.md and docs/ARCHITECTURE.md before changes. Current implementation s
 - Do not claim a planned adapter, approval flow, payment flow or static screen is complete functionality. Document partial implementation precisely.
 
 Commands and setup are in README.md. `.env.local`, `work/`, `.next/`, and browser artifacts are intentionally untracked.
+
+- Read docs/PROSPECT_BATCH_001.md for import/research contracts. Never convert supplied hypotheses or issue columns into verified findings. Only explicit owner approval of a current sourced review may enable Ready for Outreach. All email records must remain draft-only.
+- Preserve original migrations; add versioned migrations without resetting existing organizations or data. Local startup uses port 3030; Windows and cloud databases are distinct.

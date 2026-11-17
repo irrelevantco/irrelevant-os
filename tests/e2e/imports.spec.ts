@@ -1,0 +1,159 @@
+import { test, expect } from "@playwright/test";
+import { randomUUID } from "node:crypto";
+import { assertLocalTestEnvironment } from "../integration/local-guard";
+assertLocalTestEnvironment();
+test("CSV preview, mapping, import, research approval and draft preparation", async ({
+  page,
+}, testInfo) => {
+  const run = randomUUID().slice(0, 8);
+  const name = `Synthetic Services ${run}`;
+  await page.goto("/signup");
+  await expect(
+    page.getByRole("heading", { name: "Make your move." }),
+  ).toBeVisible();
+  await page.getByLabel("Email address").fill(`import-ui-${run}@example.test`);
+  await page
+    .getByLabel("Password", { exact: true })
+    .fill(`Test-only-${randomUUID()}!`);
+  await page
+    .getByRole("button", { name: "Create account", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/onboarding$/);
+  await page
+    .getByLabel("Organization name")
+    .fill(`Import UI ${testInfo.project.name} ${run}`);
+  await page.getByRole("button", { name: "Create organization" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Make the next move." }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Imports", exact: true }).click();
+  const csv = `Company,City,Sector,URL,Phone,Priority,Hypothesis\n${name},Erie PA,Cleaning,https://${run}.example.test,814-555-0100,A,Unverified synthetic research question\n${name.toUpperCase()},erie pa,Cleaning,https://www.${run}.example.test/path,,A,Duplicate synthetic row\nX,Erie PA,Cleaning,javascript:alert(1),,B,Invalid synthetic row\nSynthetic Other ${run},Warren PA,HVAC,,814-555-0101,C,Another unverified question`;
+  await page
+    .getByLabel("CSV file")
+    .setInputFiles({
+      name: "synthetic-batch.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from(csv),
+    });
+  await page.getByRole("button", { name: "Read uploaded CSV" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Map your columns" }),
+  ).toBeVisible();
+  for (const [field, column] of Object.entries({
+    business_name: "Company",
+    location: "City",
+    industry: "Sector",
+    website: "URL",
+    public_phone: "Phone",
+    research_priority: "Priority",
+    audit_hypothesis_not_verified: "Hypothesis",
+  }))
+    await page.getByLabel(`Map ${field}`, { exact: true }).selectOption(column);
+  await page.getByRole("button", { name: "Preview mapped rows" }).click();
+  await expect(page).toHaveURL(/\/dashboard\/imports\/[\w-]+$/);
+  await expect(page.getByText("2 valid", { exact: true })).toBeVisible();
+  await expect(page.getByText("1 duplicate", { exact: true })).toBeVisible();
+  await expect(page.getByText("1 invalid", { exact: true })).toBeVisible();
+  await page.getByRole("checkbox", { name: /I reviewed the rows/ }).check();
+  await page.getByRole("button", { name: "Import valid prospects" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Import results", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("2 imported", { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("2 imported", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Research these prospects" }).click();
+  const first = page.getByRole("article").first();
+  await expect(first).toContainText(name);
+  await expect(first).toContainText("Priority A");
+  await first.getByRole("link", { name: "Growth Review", exact: true }).click();
+  await expect(
+    page.getByText("Supplied hypothesis · unverified", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByLabel("Digital Presence observation", { exact: true }),
+  ).toHaveValue("");
+  await expect(
+    page.getByRole("button", {
+      name: "Approve review & mark Ready for Outreach",
+    }),
+  ).toHaveCount(0);
+  await page
+    .getByLabel("Digital Presence observation", { exact: true })
+    .fill("Synthetic browser test observation; not a real business finding.");
+  await page
+    .getByLabel("Digital Presence recommendation", { exact: true })
+    .fill("Synthetic recommendation for test validation.");
+  await page
+    .getByLabel("Digital Presence source URL", { exact: true })
+    .fill("https://example.test/synthetic-evidence");
+  await page
+    .getByLabel("Digital Presence verification", { exact: true })
+    .selectOption("verified");
+  await page
+    .getByLabel("Digital Presence confidence", { exact: true })
+    .selectOption("medium");
+  await page
+    .getByLabel("Digital Presence last researched", { exact: true })
+    .fill("2026-11-17");
+  await page
+    .getByLabel("Suggested offer", { exact: true })
+    .fill("Scope discussion; budget unknown");
+  await page
+    .getByRole("button", { name: "Save Growth Review", exact: true })
+    .click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Review saved." }),
+  ).toBeVisible();
+  await page
+    .getByRole("checkbox", { name: /I manually approve review version/ })
+    .check();
+  await page
+    .getByRole("button", {
+      name: "Approve review & mark Ready for Outreach",
+      exact: true,
+    })
+    .click();
+  await expect(
+    page
+      .getByRole("status")
+      .filter({ hasText: "Review approved and lead marked Ready" }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Prepare outreach draft" }).click();
+  await expect(
+    page.getByLabel("Personalized email draft", { exact: true }),
+  ).toHaveValue(new RegExp(name));
+  await expect(
+    page.getByText("Draft status enforced", { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByLabel("Personalized email draft", { exact: true })
+    .fill(`Synthetic draft for ${name}. Never sent.`);
+  await page
+    .getByLabel("Call opening script", { exact: true })
+    .fill("Synthetic call preparation. No call placed.");
+  await page.getByLabel("Follow-up date", { exact: true }).fill("2026-12-01");
+  await page.getByRole("button", { name: "Save draft preparation" }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Preparation saved as draft" }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByLabel("Personalized email draft", { exact: true }),
+  ).toHaveValue(`Synthetic draft for ${name}. Never sent.`);
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+    .toBeLessThanOrEqual(page.viewportSize()!.width);
+  await page.getByRole("link", { name: "Edit review", exact: true }).click();
+  await page
+    .getByLabel("Digital Presence recommendation", { exact: true })
+    .fill("Updated synthetic recommendation.");
+  await page.getByRole("button", { name: "Save Growth Review" }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Review saved." }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Business & CRM notes" }).click();
+  await expect(page.getByLabel("Pipeline status", { exact: true })).toHaveValue(
+    "Researching",
+  );
+});

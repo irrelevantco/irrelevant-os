@@ -49,6 +49,14 @@ export default async function LeadDetail({
   const notes = notesResult.data ?? [];
   return (
     <>
+      <div className="mb-5 flex gap-5 text-xs text-primary">
+        <Link className="underline" href={`/dashboard/research/${id}`}>
+          Growth Review
+        </Link>
+        <Link className="underline" href={`/dashboard/outreach/${id}`}>
+          Outreach preparation
+        </Link>
+      </div>
       <Link
         href="/dashboard/leads"
         className="mb-6 inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-primary"

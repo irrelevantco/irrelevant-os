@@ -153,7 +153,12 @@ export async function updateLead(
     .eq("organization_id", organization.id)
     .select("id")
     .single();
-  if (error || !data) return { error: databaseMessage(error?.code) };
+  if (error || !data)
+    return {
+      error: error?.message.includes("requires a verified")
+        ? "Ready for Outreach requires a verified, source-backed Growth Review and explicit owner approval. Open the Growth Review to approve it."
+        : databaseMessage(error?.code),
+    };
   revalidatePath("/dashboard", "layout");
   return { success: "Lead updated." };
 }

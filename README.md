@@ -2,23 +2,22 @@
 
 **Build your position.** A business-first client acquisition workspace for iRRELEVANT CO.
 
-Phase 1 only: a Next.js App Router application with Supabase authentication, organizations, database-enforced tenant isolation, business records, leads, notes, pipeline stages, follow-up dates, and real CRM metrics. No outreach, payments, discovery, AI jobs, or public publishing is implemented or enabled.
+A Next.js App Router acquisition CRM with Supabase authentication, organization-level RLS, businesses, leads, notes, pipeline, and Prospect Batch 001 import/research. CSV preview/mapping, deduplication, editable three-point reviews, owner approval gates and draft-only outreach preparation are implemented. Sending, payments, automatic discovery/AI research and public publishing are not enabled.
 
 ## Requirements
 
 - Node.js 22.12+ (tested on 24), npm, Docker with Compose v2 for local services.
 - Roughly 2 GB free for the lightweight Phase 1 stack and application; the full Supabase CLI stack needs considerably more.
-- No paid account or external credentials needed for the lightweight local setup.
+- No paid account or external credentials needed for the lightweight local setup. GitHub access is needed only to synchronize source.
 
 ## Run locally (recommended for Phase 1)
 
 ```sh
 npm ci
-npm run local:env
-npm run local:up
-npm run local:migrate
-npm run dev
+npm run local
 ```
+
+Windows checkout: see `docs/WINDOWS_SETUP.md` for non-destructive sync/startup instructions. `localhost` refers to the computer running Next.js.
 
 Open **http://localhost:3030**, choose Workspace → Create an account, then create your organization. Passwords require at least 12 characters. Local accounts auto-confirm; local email delivery is not configured. Add your own businesses; the app never seeds dashboard figures.
 
@@ -46,6 +45,12 @@ The CLI applies migrations on first startup. `npm run db:reset` is destructive t
 
 For hosted Auth, configure Site URL and the exact `/auth/callback` redirect for your origin. Enable email/password auth, email confirmations, SMTP, rate limits, and abuse protection. The callback uses PKCE; follow the Supabase PKCE email confirmation template requirements. Organization membership is checked server-side for every operation. The browser never calls Supabase directly.
 
+## Prospect Batch 001
+
+Open **Imports**, upload a CSV or load the included `data/imports/irrelevant_os_30_prospects.csv`, map columns, review the persisted preview, then explicitly import as organization owner. Use **Research** for the A/B/C queue and editable three-point reviews. Owner approval of a sourced, verified observation is required for Ready for Outreach. **Outreach drafts** prepares neutral introductions and call scripts without sending. See `docs/PROSPECT_BATCH_001.md` for exact behavior and local import results.
+
+`npm run batch:import` explicitly creates/reuses a dedicated local workspace with an ignored owner login file and imports all 30 records. It is local-only and idempotent. Database contents and generated credentials are not transferred through Git.
+
 ## What works
 
 - Sign up, sign in, refresh sessions, sign out; protected dashboard and server actions.
@@ -68,6 +73,7 @@ npm run lint
 npm test
 npm run build
 npm run test:rls
+npm run test:imports
 npm run test:e2e
 ```
 
@@ -87,10 +93,10 @@ Regenerate database types after schema changes: `npm run db:types` for the stand
 
 ## Production path and current limits
 
-Vercel-compatible `npm run build` / `npm run start`; no Vercel-specific runtime or Framer dependency. Use a managed Supabase project, HTTPS, reviewed environment settings, and run the migration in staging before production. Keep `.env.local` and `work/` out of Git. The checked-in code is a Phase 1 foundation, not an audited production deployment. No deployment or remote repository has been created.
+Vercel-compatible `npm run build` / `npm run start`; no Vercel-specific runtime or Framer dependency. Use a managed Supabase project, HTTPS, reviewed environment settings, and run the migration in staging before production. Keep `.env.local` and `work/` out of Git. The checked-in code is a Phase 1 foundation, not an audited production deployment. No deployment has been performed. The supplied GitHub remote is configured; check the latest session handoff for whether authentication and push completed.
 
-Membership invitations/management, password recovery UI, MFA enforcement, data export/deletion tooling, database backup/restore drills, error monitoring, and production abuse controls remain hardening work. Members can edit CRM records in their own organization; only owners can rename it. There is no in-app membership mutation. Administrators may provision memberships through reviewed database administration until invitations are built. Users must not be allowed to self-enroll into existing organizations.
+Membership invitations/management, password recovery UI, MFA enforcement, data export/deletion tooling, database backup/restore drills, error monitoring, and production abuse controls remain hardening work. Members can edit CRM records in their own organization; only owners can rename it. There is no in-app membership mutation. Import and review approval require owner role; members may edit research and drafts. Administrators may provision memberships through reviewed database administration until invitations are built. Users must not be allowed to self-enroll into existing organizations.
 
 The public site is only a truthful brand homepage in this phase. Services, partnerships, work, review intake, contact, privacy, and terms pages are planned; no unauthorized client materials, invented results, or testimonials are included. No claim about another creator's sales results is relied upon.
 
-Next: Phase 2 discovery provider contracts, source licensing/rate-limit rules, CSV import validation and deduplication, evidence-based qualification. See `docs/ROADMAP.md` for acceptance criteria.
+Next: permitted discovery providers and evidence-based qualification scoring. CSV imports, manual research priorities and editable reviews are now implemented; automatic scores and provider discovery remain future work. See `docs/ROADMAP.md` for acceptance criteria.

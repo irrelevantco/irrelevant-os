@@ -39,3 +39,7 @@ Discovery: provider licensing, robots rules, rate limits, minimal permitted publ
 ## Reporting an issue
 
 Stop affected automation (none runs in Phase 1), preserve minimal audit evidence, revoke exposed credentials, and contact the organization owner through an established private channel. Do not include private client data in public issues.
+
+## Implemented import/research controls
+
+CSV inputs are bounded to 512 KB, 500 rows, 40 unique columns and validated per row with Zod. Formula-like input is stored/rendered as plain text; no spreadsheet export or execution exists. Raw imported claims remain unverified. New import/review/draft tables deny direct writes and enforce RLS; security-definer RPCs explicitly validate tenant membership/owner role with fixed search paths. Approval requires a current review revision and a manually verified source-backed observation, enforced again by a lead status trigger. Review edits invalidate approval. Introductory templates make no weakness/budget claims, and the draft table cannot represent sent messages. No provider credentials or service-role keys are used. Generated local owner/GitHub credentials remain ignored and must never be committed.

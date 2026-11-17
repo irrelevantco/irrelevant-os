@@ -60,7 +60,7 @@ export function Field({
 }: {
   label: string;
   hint?: string;
-  children: React.ReactNode;
+  children: ReactElement;
 }) {
   const id = useId();
   const hintId = `${id}-hint`;

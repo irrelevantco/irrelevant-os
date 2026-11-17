@@ -21,7 +21,9 @@
     "local:migrate": "node scripts/local-migrate.mjs",
     "local:types": "node scripts/local-typegen.mjs",
     "local:setup": "node scripts/local-setup.mjs",
-    "local": "npm run local:setup && npm run dev"
+    "local": "npm run local:setup && npm run dev",
+    "batch:import": "node --env-file=.env.local --import tsx scripts/import-batch-001.ts",
+    "test:imports": "node --env-file=.env.local --import tsx tests/integration/imports.ts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.5.0",
