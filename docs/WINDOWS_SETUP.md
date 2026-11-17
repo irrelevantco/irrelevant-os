@@ -18,14 +18,27 @@ After the completed source is available in `https://github.com/irrelevantco/irre
 
 The remote was publicly readable but had no commits when inspected. The original Phase 1 source had only been committed in the cloud workspace. GitHub's preconfigured credential was rejected. Remote synchronization must be verified after GitHub CLI authorization completes; local commits alone do not prove that GitHub has the files.
 
+## If the browser reports connection refused
+
+Use Command Prompt if your prompt looks like `C:\Users\naryr>`. Paste **only command lines**, not a `PS ...>` prompt or copied error messages. Using `npm.cmd` works in both shells and avoids the `npm.ps1` execution-policy error without changing system policy:
+
+```bat
+cd /d "C:\Users\naryr\iRRELEVANT-OS"
+npm.cmd run dev -- --hostname 127.0.0.1 --port 3030
+```
+
+`cd /d` is for Command Prompt; in PowerShell use `Set-Location 'C:\Users\naryr\iRRELEVANT-OS'` instead. Keep the terminal open. Wait for **Ready**, then open **http://127.0.0.1:3030**. Do not use an unqualified `http://localhost`, which defaults to port 80.
+
+This starts the website without waiting for Docker setup, isolating a web-server startup failure from a backend failure. It does not make authentication/CRM available if Supabase is not running. If Next is missing, install dependencies with `npm.cmd ci`, then retry. If it still exits, preserve the terminal error for diagnosis. The setup script now launches Node/npm directly so `C:\Program Files\nodejs` paths do not break shell quoting.
+
 ## Start the app on Windows
 
 Requirements: Node.js 24 (or supported 22.12+), npm, Docker Desktop with Compose v2 and Linux containers. After obtaining the updated source:
 
 ```powershell
 Set-Location 'C:\Users\naryr\iRRELEVANT-OS'
-npm ci
-npm run local
+npm.cmd ci
+npm.cmd run local
 ```
 
 `npm run local` preserves existing environment files, generates local-only credentials only when both local files are absent, starts the small PostgreSQL/Supabase Auth/PostgREST stack, applies pending migrations without resetting data, then starts Next.js on port 3030. LF Git attributes keep Linux bootstrap scripts usable when cloned on Windows. Keep the terminal running, then open **http://localhost:3030** in your Windows browser.
@@ -41,7 +54,7 @@ docker compose version
 Test-NetConnection localhost -Port 3030
 ```
 
-A refused port means the Next.js process is not listening there. Read the terminal error; do not assume an installed repository means a running server. An occupied port can be changed explicitly with `npm run dev -- --port 3031`. Do not delete the local Docker volume to troubleshoot normal startup.
+A refused port means the Next.js process is not listening there. Read the terminal error; do not assume an installed repository means a running server. An occupied port can be changed explicitly with `npm.cmd run dev -- --port 3031`. Do not delete the local Docker volume to troubleshoot normal startup.
 
 ## Load your data on Windows
 

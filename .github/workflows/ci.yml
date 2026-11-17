@@ -36,3 +36,37 @@ jobs:
           retention-days: 3
       - if: always()
         run: npm run local:down
+  windows-startup:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm.cmd ci
+        shell: pwsh
+      - name: Verify native Windows listener on port 3030
+        shell: pwsh
+        run: |
+          $outLog = Join-Path $env:RUNNER_TEMP 'irrelevant-next-out.log'
+          $errLog = Join-Path $env:RUNNER_TEMP 'irrelevant-next-err.log'
+          $server = Start-Process -FilePath (Get-Command node).Source -ArgumentList @('scripts/dev.mjs', '--hostname', '127.0.0.1', '--port', '3030') -WorkingDirectory $env:GITHUB_WORKSPACE -PassThru -RedirectStandardOutput $outLog -RedirectStandardError $errLog
+          try {
+            $ready = $false
+            for ($attempt = 0; $attempt -lt 60; $attempt++) {
+              if ($server.HasExited) { throw 'Next.js exited before accepting connections.' }
+              try {
+                $response = Invoke-WebRequest 'http://127.0.0.1:3030' -TimeoutSec 3
+                if ($response.StatusCode -eq 200) { $ready = $true; break }
+              } catch { }
+              Start-Sleep -Seconds 1
+            }
+            if (-not $ready) { throw 'No HTTP 200 response from Windows port 3030.' }
+            Write-Host 'Native Windows startup verified: HTTP 200 at http://127.0.0.1:3030'
+          } finally {
+            if (-not $server.HasExited) { taskkill /PID $server.Id /T /F }
+            if (Test-Path $outLog) { Get-Content $outLog -Tail 40 }
+            if (Test-Path $errLog) { Get-Content $errLog -Tail 40 }
+          }
