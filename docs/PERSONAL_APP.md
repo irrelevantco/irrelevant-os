@@ -6,7 +6,7 @@ This remains a database-backed application. It does not bundle your database, ac
 
 ## Windows
 
-Before using the new agent features against your existing local database, update the repository and run `npm.cmd run local:migrate` once in that project folder. This applies additive migrations without resetting records. Daily desktop launching needs no terminal; the existing backend still needs this one-time version upgrade.
+Version 0.2.1 includes a local database updater. If Outreach drafts or Agent control reports a missing database update, choose **Workspace → Update local database…** in the app, confirm, then reload. This applies only missing additive migrations to the supported existing local Docker stack; it does not reset or seed your database. No terminal, source checkout, Node installation or environment file copying is required for that repair.
 
 1. Download the Windows x64 ZIP and extract the **entire folder**. Keep all files together. Windows 10/11 x64 are the target; ARM Windows and macOS builds are not supplied.
 2. Open **iRRELEVANT OS.exe** inside the extracted folder. This is a portable personal preview, not a signed installer or an automatically updating app.

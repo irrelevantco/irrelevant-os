@@ -1,1 +1,7 @@
-{"name":"irrelevant-os-personal","productName":"iRRELEVANT OS","version":"0.2.0","private":true,"main":"main.cjs"}
+{
+  "name": "irrelevant-os-personal",
+  "productName": "iRRELEVANT OS",
+  "version": "0.2.1",
+  "private": true,
+  "main": "main.cjs"
+}

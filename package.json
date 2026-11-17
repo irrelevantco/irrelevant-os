@@ -1,6 +1,6 @@
 {
   "name": "irrelevant-os",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "scripts": {
     "dev": "node scripts/dev.mjs",
@@ -24,7 +24,8 @@
     "local": "npm run local:setup && npm run dev",
     "batch:import": "node --env-file=.env.local --import tsx scripts/import-batch-001.ts",
     "test:imports": "node --env-file=.env.local --import tsx tests/integration/imports.ts",
-    "test:agents": "node --env-file=.env.local --import tsx tests/integration/agents.ts"
+    "test:agents": "node --env-file=.env.local --import tsx tests/integration/agents.ts",
+    "test:upgrade": "node --env-file=.env.local --import tsx tests/integration/local-upgrade.ts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.5.0",

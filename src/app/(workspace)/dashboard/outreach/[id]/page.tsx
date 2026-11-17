@@ -7,6 +7,8 @@ import { Badge, StatusBadge } from "@/components/ui/badge";
 import { OutreachDraftForm } from "@/components/research/review-form";
 import { initialOutreach, PILLARS } from "@/lib/reviews";
 import { ContactEventForm } from "@/components/agents/forms";
+import { missingDatabaseMigration } from "@/lib/database-failure";
+import { DatabaseUpdate } from "@/components/database-update";
 export const metadata = { title: "Draft preparation" };
 export default async function Preparation({
   params,
@@ -33,6 +35,7 @@ export default async function Preparation({
     .eq("lead_id", id)
     .order("created_at", { ascending: false })
     .limit(20);
+  if (missingDatabaseMigration(events.error)) return <DatabaseUpdate />;
   if (events.error)
     throw new Error(
       "Could not load contact history. Apply the agent migration.",

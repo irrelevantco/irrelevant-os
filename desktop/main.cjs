@@ -12,6 +12,9 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const net = require("node:net");
 const { validateConfig, importEnvironment } = require("./config.cjs");
+const { upgradeLocal, validateLocalTarget } = require("./local-upgrade.cjs");
+let activeConfig,
+  upgrading = false;
 let windowRef,
   child,
   connecting = false,
@@ -75,6 +78,7 @@ function createWindow(setup = false) {
   return win;
 }
 async function showSetup() {
+  activeConfig = null;
   stopServer();
   connecting = true;
   const old = windowRef;
@@ -85,6 +89,7 @@ async function showSetup() {
 }
 async function openWorkspace(config) {
   const validated = validateConfig(config);
+  activeConfig = validated;
   let origin = validated.appUrl;
   if (validated.mode === "bundled") {
     const health = await fetch(`${validated.supabaseUrl}/auth/v1/health`, {
@@ -163,6 +168,52 @@ async function openWorkspace(config) {
   connecting = false;
   return validated;
 }
+async function updateLocalDatabase() {
+  if (upgrading) return;
+  try {
+    if (activeConfig?.mode !== "bundled")
+      throw new Error(
+        "Open a bundled app with your existing local connection before updating. Hosted databases are not changed by this updater.",
+      );
+    validateLocalTarget(activeConfig.supabaseUrl);
+    const answer = await dialog.showMessageBox(windowRef, {
+      type: "question",
+      title: "Update local database",
+      message: "Apply the missing iRRELEVANT database migrations?",
+      detail:
+        "This updates only your existing local iRRELEVANT Docker database. Your accounts, leads, notes and research are retained. No database is reset, no example data is imported, and no hosted database or email is touched. Keep Docker Desktop running.",
+      buttons: ["Cancel", "Update local database"],
+      defaultId: 0,
+      cancelId: 0,
+    });
+    if (answer.response !== 1) return;
+    upgrading = true;
+    // Wait for the dialog to close before running a short, bounded local Docker command.
+    await new Promise((resolve) => setImmediate(resolve));
+    const result = upgradeLocal({ url: activeConfig.supabaseUrl });
+    await dialog.showMessageBox(windowRef, {
+      type: "info",
+      title: "Database ready",
+      message: result.applied.length
+        ? "Local database updated."
+        : "Local database is already up to date.",
+      detail:
+        "Your existing records were retained. Reload Outreach drafts and Agent control now. No message was sent.",
+    });
+    windowRef?.webContents.reload();
+  } catch (error) {
+    await dialog.showMessageBox(windowRef, {
+      type: "error",
+      title: "Database update did not finish",
+      message:
+        error instanceof Error
+          ? error.message
+          : "The local update did not finish. No reset was requested.",
+    });
+  } finally {
+    upgrading = false;
+  }
+}
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
@@ -191,6 +242,10 @@ if (!app.requestSingleInstanceLock()) {
             label: "Workspace",
             submenu: [
               { label: "Change connection…", click: () => showSetup() },
+              {
+                label: "Update local database…",
+                click: () => updateLocalDatabase(),
+              },
               { type: "separator" },
               { role: "quit" },
             ],

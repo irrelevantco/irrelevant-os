@@ -3,6 +3,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+  actions: read
 jobs:
   windows-package:
     runs-on: windows-latest
@@ -26,11 +27,29 @@ jobs:
           node tests/desktop/smoke.mjs
       - uses: actions/upload-artifact@v4
         with:
-          name: iRRELEVANT-OS-Windows-x64-v0.2.0
+          name: iRRELEVANT-OS-Windows-x64-v0.2.1
           path: |
             work/desktop-release/*.zip
             work/desktop-release/*.sha256
           retention-days: 3
+      - name: Require CRM checks for this exact commit
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $verified = $false
+          for ($attempt = 0; $attempt -lt 40; $attempt++) {
+            $runs = gh run list --workflow ci.yml --commit $env:GITHUB_SHA --limit 1 --json status,conclusion | ConvertFrom-Json
+            if ($LASTEXITCODE -ne 0) { throw 'Could not verify repository checks.' }
+            if ($runs.Count -gt 0 -and $runs[0].status -eq 'completed') {
+              if ($runs[0].conclusion -ne 'success') { throw 'CRM checks did not pass for this commit.' }
+              $verified = $true
+              break
+            }
+            Write-Host 'Waiting for CRM checks on this commit...'
+            Start-Sleep -Seconds 15
+          }
+          if (-not $verified) { throw 'CRM checks did not complete within the release window.' }
       - name: Publish the verified personal preview download
         shell: pwsh
         env:
@@ -38,4 +57,4 @@ jobs:
         run: |
           $archive = Get-ChildItem 'work/desktop-release/*.zip' | Select-Object -First 1
           $checksum = Get-ChildItem 'work/desktop-release/*.sha256' | Select-Object -First 1
-          gh release create v0.2.0-personal-preview $archive.FullName $checksum.FullName --target $env:GITHUB_SHA --prerelease --title 'iRRELEVANT OS — Personal Windows Preview' --notes-file docs/PERSONAL_RELEASE_NOTES.md
+          gh release create v0.2.1-personal-preview $archive.FullName $checksum.FullName --target $env:GITHUB_SHA --prerelease --title 'iRRELEVANT OS — Local Database Repair + Neon Logo' --notes-file docs/PERSONAL_RELEASE_NOTES.md

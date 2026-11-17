@@ -10,7 +10,7 @@ if (!executablePath) throw new Error("DESKTOP_EXECUTABLE is required.");
 const profile = await mkdtemp(path.join(tmpdir(), "irrelevant-desktop-test-"));
 let mock, electronApp;
 try {
-  let url, key, email, password;
+  let url, key, email, password, leadId;
   const real = process.env.DESKTOP_TEST_REAL_BACKEND === "true";
   if (real) {
     url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -32,6 +32,16 @@ try {
       organization_name: "Synthetic Desktop Test",
     });
     if (org.error) throw new Error("Local fixture organization failed.");
+    const prospect = await db.rpc("create_prospect", {
+      payload: {
+        organization_id: org.data,
+        name: "Synthetic Desktop Prospect",
+        industry: "Cleaning",
+        location: "Erie PA",
+      },
+    });
+    if (prospect.error) throw new Error("Local fixture prospect failed.");
+    leadId = prospect.data;
   } else {
     mock = createServer((request, response) => {
       response.writeHead(request.url === "/auth/v1/health" ? 200 : 401, {
@@ -59,6 +69,13 @@ try {
     timeout: 60000,
   });
   const setup = await electronApp.firstWindow();
+  const hasUpdater = await electronApp.evaluate(({ Menu }) =>
+    Menu.getApplicationMenu()
+      .items.find((item) => item.label === "Workspace")
+      .submenu.items.some((item) => item.label === "Update local database…"),
+  );
+  if (!hasUpdater)
+    throw new Error("Native local database updater menu is missing.");
   await expect(
     setup.getByRole("heading", { name: "Build your position." }),
   ).toBeVisible();
@@ -74,7 +91,15 @@ try {
     .getByRole("button", { name: "Open my workspace", exact: true })
     .click();
   let window;
-  try {window=await next;} catch(error) {console.error("Desktop setup status:",await setup.getByRole("status").innerText());throw error;}
+  try {
+    window = await next;
+  } catch (error) {
+    console.error(
+      "Desktop setup status:",
+      await setup.getByRole("status").innerText(),
+    );
+    throw error;
+  }
   await expect(
     window.getByRole("heading", { name: "Welcome back." }),
   ).toBeVisible({ timeout: 60000 });
@@ -95,9 +120,34 @@ try {
     await expect(
       window.getByRole("heading", { name: "Work worth approving." }),
     ).toBeVisible();
+    await expect(window.locator('img[src="/brand-ir.svg"]')).toBeVisible();
+    await window.goto(
+      `${new URL(window.url()).origin}/dashboard/outreach/${leadId}`,
+    );
+    await expect(
+      window.getByText("Draft status enforced", { exact: true }),
+    ).toBeVisible();
+    // Exercise the native updater with a current real local database. It must be a no-op.
+    await electronApp.evaluate(({ dialog, Menu }) => {
+      globalThis.__upgradeMessages = [];
+      dialog.showMessageBox = async (_parent, options) => {
+        globalThis.__upgradeMessages.push(options.message);
+        return { response: options.buttons ? 1 : 0, checkboxChecked: false };
+      };
+      Menu.getApplicationMenu()
+        .items.find((item) => item.label === "Workspace")
+        .submenu.items.find((item) => item.label === "Update local database…")
+        .click();
+    });
+    await expect
+      .poll(() => electronApp.evaluate(() => globalThis.__upgradeMessages))
+      .toContain("Local database is already up to date.");
+    await expect(
+      window.getByText("Draft status enforced", { exact: true }),
+    ).toBeVisible();
   }
   console.log(
-    `Desktop ${process.platform} smoke passed: setup → embedded server on automatic port → ${real ? "real local sign-in → private CRM → Agent control" : "sign-in UI (synthetic backend health only)"}.`,
+    `Desktop ${process.platform} smoke passed: setup → embedded server on automatic port → ${real ? "real local sign-in → Agent control → outreach draft → native database updater (no-op) → neon logo" : "sign-in UI (synthetic backend health only)"}.`,
   );
 } finally {
   if (electronApp) await electronApp.close();

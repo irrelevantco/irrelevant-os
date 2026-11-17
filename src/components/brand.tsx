@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import Image from "next/image";
 export function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <Link
@@ -7,10 +7,14 @@ export function Brand({ compact = false }: { compact?: boolean }) {
       className="inline-flex items-center gap-2.5"
       aria-label="iRRELEVANT OS home"
     >
-      <span className="flex size-8 items-center justify-center rounded-sm bg-primary font-black tracking-tighter text-primary-foreground">
-        iR
-        <ArrowUpRight className="size-2.5" strokeWidth={2.5} />
-      </span>
+      <Image
+        src="/brand-ir.svg"
+        alt=""
+        width={36}
+        height={36}
+        unoptimized
+        className="size-9 shrink-0 rounded-[4px]"
+      />
       <span className="text-[17px] font-bold tracking-[-.06em]">
         iRRELEVANT
         {!compact && (

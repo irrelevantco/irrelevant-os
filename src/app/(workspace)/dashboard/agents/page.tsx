@@ -12,6 +12,8 @@ import {
   AcceptProposal,
 } from "@/components/agents/forms";
 import { z } from "zod";
+import { missingDatabaseMigration } from "@/lib/database-failure";
+import { DatabaseUpdate } from "@/components/database-update";
 export const metadata = { title: "Agent control" };
 const proposal = z.object({ email_draft: z.string(), call_script: z.string() });
 export default async function Agents() {
@@ -40,6 +42,12 @@ export default async function Agents() {
       .select("id", { count: "exact", head: true })
       .eq("organization_id", organization.id),
   ]);
+  if (
+    [settings.error, jobs.error, leads.error, suppressed.error].some(
+      missingDatabaseMigration,
+    )
+  )
+    return <DatabaseUpdate />;
   if (settings.error || jobs.error || leads.error || suppressed.error)
     throw new Error("Could not load agent control. Apply the agent migration.");
   const owner = role === "owner";
