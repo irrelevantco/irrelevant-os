@@ -31,7 +31,7 @@ Use the deployed HTTPS web application with the hosted Supabase project. Your Wi
 
 The app keeps its icon and opens as a standalone application. Your PC can be off when you use the hosted database. Internet access is required. App Store / Google Play native packages are not included.
 
-Phone access is release-gated while the Vercel team remains on Hobby: Vercel requires Pro for this commercial application. No plan upgrade, paid purchase or new production deployment has been performed as part of this release candidate.
+A free personal phone preview option is documented in `FREE_PHONE_PREVIEW.md`; it is not deployed. Vercel publishing remains release-gated while the team stays on Hobby: Vercel requires Pro for this commercial application. No plan upgrade, paid purchase or new production deployment has been performed as part of this release candidate.
 
 ## Troubleshooting
 

@@ -2,13 +2,15 @@ name: Personal Windows application
 on:
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   windows-package:
     runs-on: windows-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -29,3 +31,11 @@ jobs:
             work/desktop-release/*.zip
             work/desktop-release/*.sha256
           retention-days: 3
+      - name: Publish the verified personal preview download
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $archive = Get-ChildItem 'work/desktop-release/*.zip' | Select-Object -First 1
+          $checksum = Get-ChildItem 'work/desktop-release/*.sha256' | Select-Object -First 1
+          gh release create v0.2.0-personal-preview $archive.FullName $checksum.FullName --target $env:GITHUB_SHA --prerelease --title 'iRRELEVANT OS — Personal Windows Preview' --notes-file docs/PERSONAL_RELEASE_NOTES.md

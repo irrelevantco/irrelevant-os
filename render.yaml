@@ -1,0 +1,28 @@
+# Optional personal phone preview. No resources are created by committing this file.
+services:
+  - type: web
+    name: irrelevant-os-personal
+    runtime: node
+    plan: free
+    region: virginia
+    repo: https://github.com/irrelevantco/irrelevant-os
+    branch: main
+    autoDeployTrigger: off
+    buildCommand: npm ci && npm run build && node scripts/stage-standalone.mjs
+    startCommand: node .next/standalone/server.js
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: HOSTNAME
+        value: 0.0.0.0
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: OPERATOR_EMAIL_ALLOWLIST
+        sync: false
+      - key: APP_URL
+        sync: false
