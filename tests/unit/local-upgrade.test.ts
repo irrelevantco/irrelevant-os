@@ -84,15 +84,20 @@ describe("local database updater", () => {
   it("applies only missing transactional migrations and records their versions", () => {
     const f = fake();
     const result = upgradeLocal({ ...options, execute: f.execute });
-    expect(result.applied).toEqual(["20261117175427", "20261117203425"]);
-    expect(f.writes).toHaveLength(2);
+    expect(result.applied).toEqual([
+      "20261117175427",
+      "20261117203425",
+      "20261117221021",
+    ]);
+    expect(f.writes).toHaveLength(3);
     expect(f.writes.every((s) => s.trim().endsWith("commit;"))).toBe(true);
     expect(f.writes[0]).toContain("values ('20261117175427')");
     expect(result.preserved.leads).toBe(30);
   });
   it("repeated upgrade writes nothing when the database is current", () => {
     const f = fake({
-      versions: "202611170001\n202611170002\n20261117175427\n20261117203425",
+      versions:
+        "202611170001\n202611170002\n20261117175427\n20261117203425\n20261117221021",
     });
     expect(upgradeLocal({ ...options, execute: f.execute }).applied).toEqual(
       [],

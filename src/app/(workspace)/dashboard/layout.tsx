@@ -90,7 +90,17 @@ export default async function WorkspaceLayout({
         </main>
         <footer className="mx-5 flex flex-wrap justify-between gap-2 border-t border-border py-5 text-[10px] text-muted-foreground sm:mx-9">
           <span>iRRELEVANT OS / Build your position.</span>
-          <span>Private workspace · Times shown in Eastern Time</span>
+          <span>
+            Private workspace · Times shown in Eastern Time · Map data:{" "}
+            <a
+              href="https://www.openstreetmap.org/copyright"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              © OpenStreetMap contributors / ODbL
+            </a>
+          </span>
         </footer>
       </div>
     </div>

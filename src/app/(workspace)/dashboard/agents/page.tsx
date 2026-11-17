@@ -18,7 +18,7 @@ export const metadata = { title: "Agent control" };
 const proposal = z.object({ email_draft: z.string(), call_script: z.string() });
 export default async function Agents() {
   const { db, organization, role } = await requireContext();
-  const [settings, jobs, leads, suppressed] = await Promise.all([
+  const [settings, jobs, leads, suppressed, capabilities] = await Promise.all([
     db
       .from("agent_settings")
       .select("*")
@@ -41,14 +41,25 @@ export default async function Agents() {
       .from("suppression_entries")
       .select("id", { count: "exact", head: true })
       .eq("organization_id", organization.id),
+    db.rpc("preparation_capabilities", { org: organization.id }),
   ]);
   if (
-    [settings.error, jobs.error, leads.error, suppressed.error].some(
-      missingDatabaseMigration,
-    )
+    [
+      settings.error,
+      jobs.error,
+      leads.error,
+      suppressed.error,
+      capabilities.error,
+    ].some(missingDatabaseMigration)
   )
     return <DatabaseUpdate />;
-  if (settings.error || jobs.error || leads.error || suppressed.error)
+  if (
+    settings.error ||
+    jobs.error ||
+    leads.error ||
+    suppressed.error ||
+    capabilities.error
+  )
     throw new Error("Could not load agent control. Apply the agent migration.");
   const owner = role === "owner";
   const list = jobs.data ?? [];
@@ -97,7 +108,15 @@ export default async function Agents() {
       </div>
       {owner && (
         <>
+          <Card className="mb-6 p-5 text-sm leading-7">
+            <strong>Start without paid tools.</strong> Resume preparation,
+            choose one of your current prospects, queue a Research plan, then
+            run the next job. The plan is a research checklist. Drafting an
+            email still requires your verified, approved review and sender
+            details.
+          </Card>
           <div className="mb-6 flex flex-wrap gap-4">
+            {settings.data?.paused !== false && <AgentControl kind="resume" />}
             <AgentControl kind="run" />
             <AgentControl kind="stop" />
           </div>
@@ -209,7 +228,12 @@ export default async function Agents() {
               <div className="mt-4">
                 {owner &&
                   j.kind === "discovery" &&
-                  j.status === "succeeded" && (
+                  j.status === "succeeded" &&
+                  j.result &&
+                  typeof j.result === "object" &&
+                  !Array.isArray(j.result) &&
+                  Array.isArray(j.result.companies) &&
+                  j.result.companies.length > 0 && (
                     <AgentControl kind="preview" job={j.id} />
                   )}
                 {owner && ["queued", "running"].includes(j.status) && (

@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import {
   Activity,
   Workflow,
+  FileSpreadsheet,
   FileInput,
   NotebookPen,
   Mail,
@@ -13,6 +14,7 @@ import {
   Settings2,
   UsersRound,
 } from "lucide-react";
+import { APP_VERSION } from "@/lib/version";
 import { Brand } from "./brand";
 import { cn } from "@/lib/utils";
 const items = [
@@ -20,6 +22,11 @@ const items = [
   { href: "/dashboard/leads", label: "Leads", icon: UsersRound },
   { href: "/dashboard/pipeline", label: "Pipeline", icon: Columns3 },
   { href: "/dashboard/imports", label: "Imports", icon: FileInput },
+  {
+    href: "/dashboard/converter",
+    label: "Data converter",
+    icon: FileSpreadsheet,
+  },
   { href: "/dashboard/research", label: "Research", icon: NotebookPen },
   { href: "/dashboard/outreach", label: "Outreach drafts", icon: Mail },
   { href: "/dashboard/agents", label: "Agent control", icon: Workflow },
@@ -81,7 +88,7 @@ export function Sidebar({ organization }: { organization: string }) {
         </div>
         <div className="flex items-center justify-between">
           <span className="eyebrow text-muted-foreground">
-            Acquisition / v0.2
+            Acquisition / v{APP_VERSION}
           </span>
           <span className="size-1.5 rounded-full bg-primary" />
         </div>

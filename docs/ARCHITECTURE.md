@@ -50,3 +50,8 @@ See PROSPECT_BATCH_001.md. The existing architecture now includes server-side cs
 See AGENT_CONTROL.md for the PostgreSQL durable preparation queue, owner-authenticated execution, evidence-based proposals, owner acceptance, append-only contact events and persistent suppression. The baseline generator is deterministic rules, not an LLM. Optional Explee company search is server-only and budgeted; it does not send or enrich contacts.
 
 The Electron personal shell bundles the same Next standalone output, starts it on a random loopback port, and keeps renderer Node integration off, context isolation and sandboxing on. It can instead open the hosted HTTPS app. Phone installation uses the existing PWA; private responses remain online-only. Runtime server Supabase aliases support backend selection without embedding user credentials. No framework or database was reinitialized.
+
+
+## Shared conversion and discovery adapters (0.2.2)
+
+`src/lib/converter` contains bounded spreadsheet parsing, template mappings, row validation and CSV/XLSX/JSON export. ExcelJS loads on demand in the client. No employee/payroll data leaves the browser. Prospect conversion hands canonical text to the existing authenticated import preview and commit actions. `openstreetmap.ts` is a fixed-endpoint, bounded key-free provider; optional Explee remains isolated. Neither adapter changes the CRM until an owner reviews and commits an import. See DATA_CONVERTER.md and COMPANY_WORKSPACES.md for current boundaries and proposed company-specific templates.

@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { loadCsv, previewImport, commitImport } from "@/app/prospect-actions";
 import { IMPORT_FIELDS, type Mapping } from "@/lib/imports/fields";
@@ -32,6 +33,13 @@ export function CsvImportForm() {
   const [state, action, pending] = useActionState(loadCsv, {});
   return (
     <div>
+      <Link
+        href="/dashboard/converter"
+        className="mb-5 inline-block text-sm text-primary underline"
+      >
+        Import Excel: open the XLSX/CSV converter, map prospects, then preview
+        in CRM
+      </Link>
       <form action={action} className="space-y-4">
         <Field
           label="CSV file"

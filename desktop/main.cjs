@@ -49,6 +49,7 @@ function createWindow(setup = false) {
     minHeight: 600,
     backgroundColor: "#101110",
     title: "iRRELEVANT OS",
+    icon: path.join(webRoot, "public", "icon-192.png"),
     show: false,
     webPreferences: {
       nodeIntegration: false,
@@ -231,6 +232,8 @@ if (!app.requestSingleInstanceLock()) {
   app
     .whenReady()
     .then(async () => {
+      if (process.platform === "win32")
+        app.setAppUserModelId("co.irrelevant.os");
       session
         .fromPartition("persist:irrelevant-os")
         .setPermissionRequestHandler((_contents, _permission, callback) =>
@@ -247,6 +250,16 @@ if (!app.requestSingleInstanceLock()) {
                 click: () => updateLocalDatabase(),
               },
               { type: "separator" },
+              {
+                label: `About iRRELEVANT OS ${app.getVersion()}`,
+                click: () =>
+                  dialog.showMessageBox(windowRef, {
+                    type: "info",
+                    message: `iRRELEVANT OS ${app.getVersion()}`,
+                    detail:
+                      "Build your position. Personal preview by iRRELEVANT CO.",
+                  }),
+              },
               { role: "quit" },
             ],
           },

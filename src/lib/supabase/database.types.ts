@@ -788,6 +788,8 @@ export type Database = {
         Args: { batch: string; org: string }
         Returns: string
       }
+      preparation_capabilities: { Args: {org:string}; Returns: Json };
+      resume_preparation: { Args: {org:string}; Returns: undefined };
       configure_agents: {
         Args: { config: Json; org: string }
         Returns: undefined

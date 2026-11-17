@@ -538,6 +538,195 @@ check(
   ),
   "Contact history is append-only",
 );
+// New key-free provider permissions and quotas. No real provider requests here.
+const freeOrg = (
+  await a.rpc("create_organization", {
+    organization_name: `Free Discovery ${run}`,
+  })
+).data!;
+check(
+  Boolean((await anonymous.rpc("resume_preparation", { org: freeOrg })).error),
+  "Anonymous cannot resume preparation",
+);
+check(
+  Boolean((await b.rpc("resume_preparation", { org: freeOrg })).error),
+  "Other tenant cannot resume preparation",
+);
+check(
+  Boolean((await member.rpc("resume_preparation", { org })).error),
+  "Member cannot resume preparation",
+);
+check(
+  Boolean((await b.rpc("preparation_capabilities", { org: freeOrg })).error),
+  "Capability probe requires membership",
+);
+check(
+  Boolean(
+    (await anonymous.rpc("preparation_capabilities", { org: freeOrg })).error,
+  ),
+  "Anonymous cannot probe capabilities",
+);
+check(
+  !(await a.rpc("resume_preparation", { org: freeOrg })).error,
+  "Owner resumes default free preparation",
+);
+const freeSettings = (
+  await a
+    .from("agent_settings")
+    .select("*")
+    .eq("organization_id", freeOrg)
+    .single()
+).data!;
+check(
+  freeSettings.paused === false && freeSettings.explee_daily_credit_limit === 0,
+  "Resume enables preparation without paid allowance",
+);
+await a.rpc("configure_agents", {
+  org: freeOrg,
+  config: {
+    ...config,
+    paused: true,
+    daily_job_limit: 8,
+    sender_name: "Preserved Operator",
+  },
+});
+await a.rpc("resume_preparation", { org: freeOrg });
+const preserved = (
+  await a
+    .from("agent_settings")
+    .select("*")
+    .eq("organization_id", freeOrg)
+    .single()
+).data!;
+check(
+  preserved.daily_job_limit === 8 &&
+    preserved.sender_name === "Preserved Operator" &&
+    preserved.paused === false,
+  "Resume preserves configured limits and sender identity",
+);
+const freeRequest = {
+  org: freeOrg,
+  job_kind: "discovery",
+  request_key: randomUUID(),
+  parameters: {
+    provider: "osm",
+    category: "plumber",
+    industry: "Plumbing",
+    city: "Erie",
+    state: "PA",
+    count: 5,
+  },
+};
+const freeResult = await a.rpc("enqueue_agent_job", freeRequest);
+check(
+  Boolean(freeResult.data) && !freeResult.error,
+  "Free discovery queues with zero Explee credits",
+);
+check(
+  (await a.rpc("enqueue_agent_job", freeRequest)).data === freeResult.data,
+  "Free discovery re-enqueue is idempotent even during cooldown",
+);
+check(
+  Boolean(
+    (
+      await a.rpc("enqueue_agent_job", {
+        ...freeRequest,
+        request_key: randomUUID(),
+      })
+    ).error,
+  ),
+  "Free discovery enqueue cooldown is enforced",
+);
+const freeClaim = claimedJobSchema.parse(
+  (await a.rpc("claim_agent_job", { org: freeOrg })).data,
+);
+check(
+  freeClaim.job.id === freeResult.data && freeClaim.job.reserved_credits === 0,
+  "Zero-allowance free discovery is claimable without reserving paid credits",
+);
+await a.rpc("finish_agent_job", {
+  org: freeOrg,
+  job: freeClaim.job.id,
+  lease: freeClaim.job.lease_token,
+  output: { provider: "osm", companies: [], credits_charged: 0 },
+});
+check(
+  (
+    await a
+      .from("agent_settings")
+      .select("paused")
+      .eq("organization_id", freeOrg)
+      .single()
+  ).data?.paused === false,
+  "Zero-cost result does not pause preparation",
+);
+sql(
+  `update public.agent_jobs set created_at=now()-interval '2 minutes' where id='${freeClaim.job.id}';`,
+);
+const secondFree = (
+  await a.rpc("enqueue_agent_job", {
+    ...freeRequest,
+    request_key: randomUUID(),
+  })
+).data!;
+check(Boolean(secondFree), "Next free request queues after enqueue cooldown");
+check(
+  !(await a.rpc("claim_agent_job", { org: freeOrg })).data,
+  "Execution cooldown prevents rapid provider requests",
+);
+sql(
+  `update public.agent_jobs set started_at=now()-interval '2 minutes' where id='${freeClaim.job.id}';`,
+);
+const secondClaim = claimedJobSchema.parse(
+  (await a.rpc("claim_agent_job", { org: freeOrg })).data,
+);
+await a.rpc("finish_agent_job", {
+  org: freeOrg,
+  job: secondClaim.job.id,
+  lease: secondClaim.job.lease_token,
+  failure: "Synthetic free provider timeout",
+});
+check(
+  (await a.from("agent_jobs").select("status").eq("id", secondFree).single())
+    .data?.status === "failed",
+  "Free discovery timeouts are not automatically retried",
+);
+sql(
+  `update public.agent_jobs set created_at=now()-interval '2 minutes' where id='${secondFree}';`,
+);
+const thirdFree = (
+  await a.rpc("enqueue_agent_job", {
+    ...freeRequest,
+    request_key: randomUUID(),
+  })
+).data!;
+check(Boolean(thirdFree), "Third daily free request queues");
+sql(
+  `update public.agent_jobs set created_at=now()-interval '2 minutes' where id='${thirdFree}';`,
+);
+check(
+  Boolean(
+    (
+      await a.rpc("enqueue_agent_job", {
+        ...freeRequest,
+        request_key: randomUUID(),
+      })
+    ).error,
+  ),
+  "Daily free discovery cap blocks a fourth request",
+);
+check(
+  Boolean(
+    (
+      await a.rpc("enqueue_agent_job", {
+        ...freeRequest,
+        request_key: randomUUID(),
+        parameters: { ...freeRequest.parameters, category: null },
+      })
+    ).error,
+  ),
+  "Malformed direct free discovery request is rejected",
+);
 console.log(
   `${passed} agent integration assertions passed. No external provider was contacted.`,
 );

@@ -1,3 +1,4 @@
+import ExcelJS from "exceljs";
 import { _electron, expect } from "playwright/test";
 import { createServer } from "node:http";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -121,6 +122,26 @@ try {
       window.getByRole("heading", { name: "Work worth approving." }),
     ).toBeVisible();
     await expect(window.locator('img[src="/brand-ir.svg"]')).toBeVisible();
+    await window
+      .getByRole("link", { name: "Data converter", exact: true })
+      .click();
+    await window.getByLabel("Conversion template").selectOption("employees");
+    const workbook = new ExcelJS.Workbook();
+    workbook.addWorksheet("Employees").addRows([
+      ["Employee ID", "Name"],
+      ["00017", "Synthetic Employee"],
+    ]);
+    await window
+      .getByLabel("Spreadsheet or CSV file")
+      .setInputFiles({
+        name: "desktop-test.xlsx",
+        mimeType:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        buffer: Buffer.from(await workbook.xlsx.writeBuffer()),
+      });
+    await expect(
+      window.getByText(/1 source rows · 1 valid · 0 need review/),
+    ).toBeVisible();
     await window.goto(
       `${new URL(window.url()).origin}/dashboard/outreach/${leadId}`,
     );
@@ -147,7 +168,7 @@ try {
     ).toBeVisible();
   }
   console.log(
-    `Desktop ${process.platform} smoke passed: setup → embedded server on automatic port → ${real ? "real local sign-in → Agent control → outreach draft → native database updater (no-op) → neon logo" : "sign-in UI (synthetic backend health only)"}.`,
+    `Desktop ${process.platform} smoke passed: setup → embedded server on automatic port → ${real ? "real local sign-in → Agent control → XLSX conversion → outreach draft → native database updater (no-op) → neon logo" : "sign-in UI (synthetic backend health only)"}.`,
   );
 } finally {
   if (electronApp) await electronApp.close();

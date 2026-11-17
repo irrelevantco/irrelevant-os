@@ -12,6 +12,11 @@ import {
   eventSchema,
   discoverySchema,
 } from "@/lib/agents/contracts";
+import {
+  freeDiscoverySchema,
+  FREE_CATEGORIES,
+} from "@/lib/agents/discovery-options";
+import { missingDatabaseMigration } from "@/lib/database-failure";
 import { runNext } from "@/lib/agents/worker";
 import { candidatesCsv } from "@/lib/agents/explee";
 import { autoMapping, parseCsv, previewRows } from "@/lib/imports/csv";
@@ -48,19 +53,25 @@ export async function enqueueJob(
   const { kind, lead, request_key } = parsed.data;
   let parameters: Json = {};
   if (kind === "discovery") {
-    if (!process.env.EXPLEE_API_KEY)
-      return {
-        error:
-          "Explee API key is not configured. Use CSV Imports until a provider is connected.",
+    if (form.get("provider") === "osm") {
+      const query = freeDiscoverySchema.safeParse(Object.fromEntries(form));
+      if (!query.success) return { error: query.error.issues[0].message };
+      parameters = {
+        ...query.data,
+        industry: FREE_CATEGORIES[query.data.category],
       };
-    const query = discoverySchema.safeParse(Object.fromEntries(form));
-    if (!query.success) return { error: query.error.issues[0].message };
-    parameters = query.data;
-    if (form.get("credit_approval") !== "on")
-      return {
-        error:
-          "Confirm this provider request may consume your configured Explee credits.",
-      };
+    } else {
+      if (!process.env.EXPLEE_API_KEY)
+        return {
+          error:
+            "Optional Explee is not connected. Select OpenStreetMap — free, no API key instead.",
+        };
+      const query = discoverySchema.safeParse(Object.fromEntries(form));
+      if (!query.success) return { error: query.error.issues[0].message };
+      parameters = { ...query.data, provider: "explee" };
+      if (form.get("credit_approval") !== "on")
+        return { error: "Confirm the optional paid provider request." };
+    }
   } else if (!lead) return { error: "Choose a prospect." };
   const { error } = await db.rpc("enqueue_agent_job", {
     org: organization.id,
@@ -74,6 +85,24 @@ export async function enqueueJob(
   return {
     success:
       "Job queued. Use Run next while signed in as the organization owner.",
+  };
+}
+export async function resumePreparation(): Promise<ActionState> {
+  const { db, organization, role } = await requireContext();
+  if (role !== "owner") return { error: "Organization owner required." };
+  const { error } = await db.rpc("resume_preparation", {
+    org: organization.id,
+  });
+  if (error)
+    return {
+      error: missingDatabaseMigration(error)
+        ? "Update the local database from the window’s Workspace menu, then resume."
+        : "Could not resume preparation.",
+    };
+  changed();
+  return {
+    success:
+      "Preparation resumed. Research plans and OpenStreetMap discovery need no paid API. Nothing is sent automatically.",
   };
 }
 export async function runAgent(): Promise<ActionState> {
@@ -172,7 +201,7 @@ export async function previewDiscovery(
   if (!job.success) return { error: "Invalid discovery result." };
   const { data } = await db
     .from("agent_jobs")
-    .select("result,kind,status")
+    .select("result,kind,status,input")
     .eq("organization_id", organization.id)
     .eq("id", job.data)
     .single();
@@ -185,15 +214,22 @@ export async function previewDiscovery(
     .safeParse(data.result);
   if (!result.success)
     return { error: "No importable candidates. Check provider results." };
+  const provider =
+    (data.input as { provider?: string })?.provider === "osm"
+      ? "osm"
+      : "explee";
   const csv = candidatesCsv(result.data.companies);
   const rows = parseCsv(csv);
   const mapping = autoMapping(rows.headers);
   const { data: batch, error } = await db.rpc("preview_prospect_import", {
     org: organization.id,
-    batch_label: "Explee discovery candidates",
-    file_name: `explee-${job.data}.csv`,
+    batch_label:
+      provider === "osm"
+        ? "OpenStreetMap discovery candidates"
+        : "Explee discovery candidates",
+    file_name: `${provider}-${job.data}.csv`,
     file_fingerprint: createHash("sha256")
-      .update(`explee-v1:${job.data}`)
+      .update(`${provider}-v1:${job.data}`)
       .digest("hex"),
     field_mapping: mapping,
     rows: previewRows(rows.records, mapping) as unknown as Json,

@@ -146,7 +146,19 @@ test("CSV preview, mapping, import, research approval and draft preparation", as
   await expect(
     page.getByRole("heading", { name: "Work worth approving." }),
   ).toBeVisible();
-  await page.getByLabel("Pause preparation agents", { exact: true }).uncheck();
+  await page
+    .getByRole("button", { name: "Resume free preparation", exact: true })
+    .click();
+  await expect(
+    page.getByText("Preparation enabled", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByLabel("Pause preparation agents", { exact: true }),
+  ).not.toBeChecked();
+  await expect(page.getByLabel("Discovery source")).toHaveValue("osm");
+  await expect(page.getByLabel("Daily Explee credit allowance")).toHaveValue(
+    "0",
+  );
   await page
     .getByLabel("Sender name", { exact: true })
     .fill("Synthetic Operator");

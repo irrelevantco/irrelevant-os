@@ -1,5 +1,5 @@
 """Package the current standalone Next build with a pinned, checksum-verified Electron runtime."""
-import argparse,hashlib,json,pathlib,shutil,urllib.request,zipfile
+import argparse,hashlib,json,pathlib,shutil,urllib.request,zipfile,subprocess
 root=pathlib.Path(__file__).resolve().parent.parent
 parser=argparse.ArgumentParser();parser.add_argument('--platform',choices=['win32','linux'],default='win32');parser.add_argument('--output',default='work/desktop-release');args=parser.parse_args()
 app_version=json.loads((root/'desktop'/'package.json').read_text())['version']
@@ -21,7 +21,9 @@ out=(root/args.output).resolve();out.mkdir(parents=True,exist_ok=True);app_dir=o
 if app_dir.exists():shutil.rmtree(app_dir)
 app_dir.mkdir()
 with zipfile.ZipFile(runtime) as archive:archive.extractall(app_dir)
-if args.platform=='win32':(app_dir/'electron.exe').rename(app_dir/'iRRELEVANT OS.exe')
+if args.platform=='win32':
+ (app_dir/'electron.exe').rename(app_dir/'iRRELEVANT OS.exe')
+ subprocess.run(['node',str(root/'scripts'/'set-win-identity.mjs'),str(app_dir/'iRRELEVANT OS.exe')],cwd=root,check=True)
 else:(app_dir/'electron').chmod(0o755);(app_dir/'chrome-sandbox').chmod(0o755);(app_dir/'chrome_crashpad_handler').chmod(0o755)
 app=app_dir/'resources'/'app';app.mkdir()
 shutil.copytree(root/'supabase'/'migrations',app/'migrations')

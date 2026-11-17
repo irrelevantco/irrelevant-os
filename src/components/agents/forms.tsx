@@ -1,7 +1,8 @@
 "use client";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import {
   configureAgents,
+  resumePreparation,
   enqueueJob,
   runAgent,
   stopAgents,
@@ -9,6 +10,7 @@ import {
   logContact,
   previewDiscovery,
 } from "@/app/agent-actions";
+import { FREE_CATEGORIES, US_STATES } from "@/lib/agents/discovery-options";
 import { Field, Submit } from "@/components/forms";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import type { Database } from "@/lib/supabase/database.types";
@@ -39,6 +41,7 @@ export function AgentSettingsForm({
     <form action={action} className="space-y-4">
       <label className="flex gap-3 text-sm">
         <input
+          key={String(settings?.paused ?? true)}
           name="paused"
           type="checkbox"
           defaultChecked={settings?.paused ?? true}
@@ -57,7 +60,7 @@ export function AgentSettingsForm({
         </Field>
         <Field
           label="Daily Explee credit allowance"
-          hint="Default 0 disables discovery. Company search may cost 0.5 credits per result. No automatic top-ups."
+          hint="Only applies to optional Explee. Free OpenStreetMap search works with this set to 0. No automatic top-ups."
         >
           <Input
             name="explee_daily_credit_limit"
@@ -141,44 +144,95 @@ export function DiscoveryForm({
   requestKey: string;
   configured: boolean;
 }) {
+  const [provider, setProvider] = useState("osm");
   const [state, action] = useActionState(enqueueJob, {});
   return (
     <form action={action} className="space-y-4">
       <input type="hidden" name="request_key" value={requestKey} />
       <input type="hidden" name="kind" value="discovery" />
-      <Field label="Industry">
-        <Input
-          name="industry"
-          required
-          minLength={2}
-          maxLength={160}
-          placeholder="Established commercial cleaning businesses"
-        />
+      <Field label="Discovery source">
+        <Select
+          name="provider"
+          value={provider}
+          onChange={(event) => setProvider(event.target.value)}
+        >
+          <option value="osm">OpenStreetMap — free, no API key</option>
+          <option value="explee" disabled={!configured}>
+            Explee — optional paid provider
+            {configured ? "" : " (not connected)"}
+          </option>
+        </Select>
       </Field>
+      {provider === "osm" ? (
+        <>
+          <Field label="Business category">
+            <Select name="category" defaultValue="plumber">
+              {Object.entries(FREE_CATEGORIES).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="US state">
+            <Select name="state" defaultValue="PA">
+              {US_STATES.map((code) => (
+                <option key={code}>{code}</option>
+              ))}
+            </Select>
+          </Field>
+        </>
+      ) : (
+        <Field label="Industry">
+          <Input name="industry" required minLength={2} maxLength={160} />
+        </Field>
+      )}
       <Field label="US city">
         <Input
           name="city"
           required
           minLength={2}
-          maxLength={160}
-          placeholder="Erie"
+          maxLength={80}
+          defaultValue="Erie"
         />
       </Field>
       <Field label="Target candidates">
         <Input name="count" type="number" min={1} max={10} defaultValue={5} />
       </Field>
-      <label className="flex gap-3 text-xs leading-6">
-        <input name="credit_approval" type="checkbox" required />I approve one
-        search within the configured credit allowance. Provider billing terms
-        apply.
-      </label>
+      {provider === "explee" && (
+        <label className="flex gap-3 text-xs leading-6">
+          <input name="credit_approval" type="checkbox" required />I approve
+          this optional provider request within my credit allowance.
+        </label>
+      )}
+      <p className="text-xs leading-6 text-muted-foreground">
+        {provider === "osm"
+          ? "No key or payment needed. Up to 3 free requests per day, at least a minute apart, with 10 candidates per request. Map coverage and contact details vary; results need research and import approval."
+          : "Optional provider credits apply. No automatic purchases or top-ups."}
+      </p>
       <p className="text-xs text-muted-foreground">
-        {configured
-          ? "Company-search adapter configured. Results require an import preview."
-          : "Explee API key not configured. CSV Imports are available now."}
+        Map data:{" "}
+        <a
+          className="underline"
+          href="https://www.openstreetmap.org/copyright"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          © OpenStreetMap contributors, ODbL
+        </a>
+        . Free service:{" "}
+        <a
+          className="underline"
+          href="https://overpass.private.coffee/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Private.coffee terms and privacy
+        </a>
+        .
       </p>
       <Feedback state={state} />
-      <Submit>Queue company discovery</Submit>
+      <Submit>Queue business search</Submit>
     </form>
   );
 }
@@ -186,28 +240,32 @@ export function AgentControl({
   kind,
   job,
 }: {
-  kind: "run" | "stop" | "preview";
+  kind: "run" | "stop" | "preview" | "resume";
   job?: string;
 }) {
   const [state, action] = useActionState(
-    kind === "run"
-      ? runAgent
-      : kind === "preview"
-        ? previewDiscovery
-        : stopAgents,
+    kind === "resume"
+      ? resumePreparation
+      : kind === "run"
+        ? runAgent
+        : kind === "preview"
+          ? previewDiscovery
+          : stopAgents,
     {},
   );
   return (
     <form action={action}>
       <input type="hidden" name="job" value={job ?? ""} />
       <Submit>
-        {kind === "run"
-          ? "Run next queued job"
-          : kind === "preview"
-            ? "Preview candidates in Imports"
-            : job
-              ? "Stop job"
-              : "Pause and stop all jobs"}
+        {kind === "resume"
+          ? "Resume free preparation"
+          : kind === "run"
+            ? "Run next queued job"
+            : kind === "preview"
+              ? "Preview candidates in Imports"
+              : job
+                ? "Stop job"
+                : "Pause and stop all jobs"}
       </Submit>
       <Feedback state={state} />
     </form>

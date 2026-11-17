@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/lib/supabase/database.types";
 import { claimedJobSchema } from "./contracts";
 import { prepare } from "./prepare";
+import { discoverOpenStreetMap } from "./openstreetmap";
 import { discover } from "./explee";
 export async function runNext(db: SupabaseClient<Database>, org: string) {
   const args = { org };
@@ -14,17 +15,21 @@ export async function runNext(db: SupabaseClient<Database>, org: string) {
   let failure: string | undefined;
   try {
     output = (context.job.kind === "discovery"
-      ? await discover(
-          context.job.input,
-          process.env.EXPLEE_API_KEY ?? "",
-          context.job.reserved_credits,
-        )
+      ? (context.job.input as { provider?: string })?.provider === "osm"
+        ? await discoverOpenStreetMap(context.job.input)
+        : await discover(
+            context.job.input,
+            process.env.EXPLEE_API_KEY ?? "",
+            context.job.reserved_credits,
+          )
       : prepare(context)) as unknown as Json;
   } catch (error) {
     // Persist only controlled errors; never record provider payloads, headers or credentials.
     failure =
       error instanceof Error &&
-      /^(Explee|Configure|Verified|Business|Insufficient)/.test(error.message)
+      /^(OpenStreetMap|Explee|Configure|Verified|Business|Insufficient)/.test(
+        error.message,
+      )
         ? error.message.slice(0, 500)
         : "Preparation failed. Check configuration and retry after review.";
   }

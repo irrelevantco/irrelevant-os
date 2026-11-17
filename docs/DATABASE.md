@@ -42,3 +42,8 @@ Additive migration preserves existing CRM/organization records. New RLS tables: 
 ## Preparation extension
 
 Migration `20261117175427_agent_control.sql` adds agent_settings, contact_events, suppression_entries and agent_jobs, all with RLS. Mutations require scoped authenticated owner/member RPCs. There is no anonymous worker API. `20261117203425_explicit_rpc_privileges.sql` explicitly removes anon/PUBLIC execute grants that hosted default privileges may add. See AGENT_CONTROL.md for leases, caps, contact truth and stale-proposal rules.
+
+
+## Free discovery and explicit resume (0.2.2)
+
+`20261117221021_free_discovery_and_resume.sql` adds no tables or business data. Owner-only `resume_preparation` inserts defaults if missing or clears only `paused`. Member-scoped `preparation_capabilities` detects missing upgrades. `enqueue_agent_job` and `claim_agent_job` distinguish free OSM jobs from paid Explee jobs, enforcing three daily free requests and one-minute cooldowns with the existing tenant advisory lock. All RPCs explicitly revoke PUBLIC/anon execution and enforce identity inside the function. Existing settings, records, RLS and audit triggers remain in force. Apply using `npm run local:migrate` or the desktop local updater, never a reset. Spreadsheet conversion adds no HR/payroll tables; only explicitly reviewed prospects enter the CRM.

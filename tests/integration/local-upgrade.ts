@@ -112,7 +112,7 @@ try {
   });
   check(
     JSON.stringify(result.applied) ===
-      JSON.stringify(["20261117175427", "20261117203425"]),
+      JSON.stringify(["20261117175427", "20261117203425", "20261117221021"]),
     "Applied precisely the missing migrations",
   );
   check(

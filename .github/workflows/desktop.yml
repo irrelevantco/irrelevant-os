@@ -25,12 +25,16 @@ jobs:
         run: |
           $env:DESKTOP_EXECUTABLE = Join-Path $env:GITHUB_WORKSPACE 'work\desktop-release\iRRELEVANT-OS-win32-x64\iRRELEVANT OS.exe'
           node tests/desktop/smoke.mjs
+      - name: Check free provider connectivity (one bounded lookup, no import)
+        continue-on-error: true
+        run: node --import tsx scripts/verify-free-discovery.ts
       - uses: actions/upload-artifact@v4
         with:
-          name: iRRELEVANT-OS-Windows-x64-v0.2.1
+          name: iRRELEVANT-OS-Windows-x64-v0.2.2
           path: |
             work/desktop-release/*.zip
             work/desktop-release/*.sha256
+            work/free-discovery-check.json
           retention-days: 3
       - name: Require CRM checks for this exact commit
         shell: pwsh
@@ -57,4 +61,4 @@ jobs:
         run: |
           $archive = Get-ChildItem 'work/desktop-release/*.zip' | Select-Object -First 1
           $checksum = Get-ChildItem 'work/desktop-release/*.sha256' | Select-Object -First 1
-          gh release create v0.2.1-personal-preview $archive.FullName $checksum.FullName --target $env:GITHUB_SHA --prerelease --title 'iRRELEVANT OS — Local Database Repair + Neon Logo' --notes-file docs/PERSONAL_RELEASE_NOTES.md
+          gh release create v0.2.2-personal-preview $archive.FullName $checksum.FullName --target $env:GITHUB_SHA --prerelease --title 'iRRELEVANT OS — Free Discovery + Spreadsheet Converter' --notes-file docs/PERSONAL_RELEASE_NOTES.md

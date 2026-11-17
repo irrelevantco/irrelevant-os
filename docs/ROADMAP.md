@@ -40,4 +40,9 @@ Home foundation exists. Add Services, Growth Partnerships, Our Work, Request a G
 
 ## Prospect Batch 001 delivered scope
 
-CSV upload/bundled load, mapping, Zod preview, row errors, normalized deduplication, idempotent transactional import, owner scope, preserved unverified research metadata, A/B/C research queue, editable three-point reviews, source/confidence/date fields, manual owner readiness approval and draft-only outreach preparation are implemented. This completes the CSV/manual-research slice of Phases 2/3. Configurable discovery providers, automated qualification scores, AI audit generation/PDFs and Gmail remain unimplemented. See PROSPECT_BATCH_001.md and WINDOWS_SETUP.md.
+CSV upload/bundled load, mapping, Zod preview, row errors, normalized deduplication, idempotent transactional import, owner scope, preserved unverified research metadata, A/B/C research queue, editable three-point reviews, source/confidence/date fields, manual owner readiness approval and draft-only outreach preparation are implemented. This completes the CSV/manual-research slice of Phases 2/3. Bounded free OpenStreetMap and optional Explee company searches are now implemented. Automated qualification scores, AI audit generation/PDFs and Gmail remain unimplemented. See PROSPECT_BATCH_001.md and WINDOWS_SETUP.md.
+
+
+## Personal preview 0.2.2 and future company templates
+
+Implemented: explicit owner resume without changing paid limits, bounded free map discovery, true embedded neon Windows icon, and reviewed XLSX/CSV conversion/export for seven templates. Only the prospect template imports into the CRM. Workforce/payroll/scheduling/production operational modules, vendor connectors and PDF/DOCX resume extraction are not implemented. Next validate the acquisition pilot and an authorized migration sample, then choose one company-specific template. See COMPANY_WORKSPACES.md for acceptance gates and pricing hypotheses.
