@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 import { config } from "dotenv";
 import { existsSync } from "node:fs";
 config({ path: ".env.local", quiet: true });
-const baseURL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3030";
 export default defineConfig({
   testDir: "./tests/e2e",
   timeout: 90000,

@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "build": "next build",
-    "start": "next start --hostname 0.0.0.0",
+    "start": "next start --hostname 0.0.0.0 --port 3030",
     "typecheck": "next typegen && tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
@@ -19,7 +19,9 @@
     "local:up": "docker compose --env-file work/stack.env -f compose.phase1.yml up -d --wait",
     "local:down": "docker compose --env-file work/stack.env -f compose.phase1.yml down",
     "local:migrate": "node scripts/local-migrate.mjs",
-    "local:types": "node scripts/local-typegen.mjs"
+    "local:types": "node scripts/local-typegen.mjs",
+    "local:setup": "node scripts/local-setup.mjs",
+    "local": "npm run local:setup && npm run dev"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.5.0",
@@ -27,6 +29,7 @@
     "@supabase/supabase-js": "^2.119.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "csv-parse": "^7.0.3",
     "lucide-react": "^1.74.0",
     "next": "^16.4.6",
     "react": "^19.3.1",

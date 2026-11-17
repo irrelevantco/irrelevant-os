@@ -32,8 +32,8 @@ services:
       API_EXTERNAL_URL: http://127.0.0.1:54321
       GOTRUE_DB_DRIVER: postgres
       GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@db:5432/postgres
-      GOTRUE_SITE_URL: http://localhost:3000
-      GOTRUE_URI_ALLOW_LIST: http://localhost:3000/auth/callback
+      GOTRUE_SITE_URL: http://localhost:3030
+      GOTRUE_URI_ALLOW_LIST: http://localhost:3030/auth/callback
       GOTRUE_DISABLE_SIGNUP: "false"
       GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
       GOTRUE_MAILER_AUTOCONFIRM: "true"

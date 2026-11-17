@@ -6,6 +6,7 @@ const args = process.argv
   .map((arg) => (arg === "--host" ? "--hostname" : arg));
 if (!args.includes("--hostname") && !args.includes("-H"))
   args.push("--hostname", "0.0.0.0");
+if (!args.includes("--port") && !args.includes("-p")) args.push("--port", process.env.PORT || "3030");
 const child = spawn(
   process.execPath,
   ["node_modules/next/dist/bin/next", "dev", ...args],

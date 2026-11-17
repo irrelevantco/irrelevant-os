@@ -20,7 +20,7 @@ npm run local:migrate
 npm run dev
 ```
 
-Open **http://localhost:3000**, choose Workspace → Create an account, then create your organization. Passwords require at least 12 characters. Local accounts auto-confirm; local email delivery is not configured. Add your own businesses; the app never seeds dashboard figures.
+Open **http://localhost:3030**, choose Workspace → Create an account, then create your organization. Passwords require at least 12 characters. Local accounts auto-confirm; local email delivery is not configured. Add your own businesses; the app never seeds dashboard figures.
 
 `local:env` creates ignored `.env.local` and `work/stack.env` files with randomly generated **local-only** credentials. It refuses to overwrite existing files. `local:up` runs PostgreSQL 15, Supabase Auth (GoTrue), PostgREST, and a loopback-only gateway. This profile implements the Phase 1 backend; it excludes Storage, Realtime, Studio, and email delivery. It is not a production self-hosting template. Only ports 54321 (API) and 54322 (database) bind to loopback. Data persists in the `irrelevant-phase1_phase1-db` Docker volume. `local:migrate` records the migration version and safely skips it on subsequent runs.
 

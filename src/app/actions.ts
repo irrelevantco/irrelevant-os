@@ -57,7 +57,7 @@ export async function signUp(
   const { data, error } = await db.auth.signUp({
     ...parsed.data,
     options: {
-      emailRedirectTo: `${process.env.APP_URL || "http://localhost:3000"}/auth/callback`,
+      emailRedirectTo: `${process.env.APP_URL || "http://localhost:3030"}/auth/callback`,
     },
   });
   if (error)

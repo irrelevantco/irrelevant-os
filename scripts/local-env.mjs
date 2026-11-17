@@ -20,7 +20,7 @@ writeFileSync(
 );
 writeFileSync(
   ".env.local",
-  `APP_URL=http://localhost:3000\nNEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321\nNEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${anon}\nALLOW_LOCAL_INTEGRATION_TESTS=true\n`,
+  `APP_URL=http://localhost:3030\nNEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321\nNEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${anon}\nALLOW_LOCAL_INTEGRATION_TESTS=true\n`,
   { mode: 0o600 },
 );
 console.log(
