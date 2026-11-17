@@ -2,7 +2,9 @@
 
 **Build your position.** A business-first client acquisition workspace for iRRELEVANT CO.
 
-A Next.js App Router acquisition CRM with Supabase authentication, organization-level RLS, businesses, leads, notes, pipeline, and Prospect Batch 001 import/research. CSV preview/mapping, deduplication, editable three-point reviews, owner approval gates and draft-only outreach preparation are implemented. Sending, payments, automatic discovery/AI research and public publishing are not enabled.
+A Next.js App Router acquisition CRM with Supabase authentication, organization-level RLS, businesses, leads, notes, pipeline, and Prospect Batch 001 import/research. CSV preview/mapping, deduplication, editable three-point reviews, owner approval gates and draft-only outreach preparation are implemented. Controlled preparation agents and optional bounded Explee company discovery are implemented. Email sending, payments, LLM research and public publishing are not enabled.
+
+For the personal Windows application and phone setup, see `docs/PERSONAL_APP.md`. For the preparation queue, see `docs/AGENT_CONTROL.md`.
 
 ## Requirements
 
@@ -74,6 +76,7 @@ npm test
 npm run build
 npm run test:rls
 npm run test:imports
+npm run test:agents
 npm run test:e2e
 ```
 
@@ -100,3 +103,11 @@ Membership invitations/management, password recovery UI, MFA enforcement, data e
 The public site is only a truthful brand homepage in this phase. Services, partnerships, work, review intake, contact, privacy, and terms pages are planned; no unauthorized client materials, invented results, or testimonials are included. No claim about another creator's sales results is relied upon.
 
 Next: permitted discovery providers and evidence-based qualification scoring. CSV imports, manual research priorities and editable reviews are now implemented; automatic scores and provider discovery remain future work. See `docs/ROADMAP.md` for acceptance criteria.
+
+## Current release candidate
+
+The standalone build can be packaged as a personal Electron Windows application. The manual Windows packaging workflow produces a checksum-verified portable ZIP and tests native setup → bundled server → sign-in UI. Desktop real-database testing runs separately on the local backend. See `docs/PERSONAL_APP.md`.
+
+Production requires `OPERATOR_EMAIL_ALLOWLIST` (exact operator emails, comma-separated). It defaults to deny in production; local development signup remains available. Runtime server aliases `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` let the desktop choose a backend without rebuilding. No privileged key is accepted by desktop setup.
+
+`vercel.json` disables automatic Git deployments while the commercial hosting plan decision is pending. This prevents a source push from silently publishing this release. Remove that gate only when the authorized hosting plan and release configuration are ready. No database contents are synchronized through Git or desktop packaging.

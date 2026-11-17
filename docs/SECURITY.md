@@ -43,3 +43,9 @@ Stop affected automation (none runs in Phase 1), preserve minimal audit evidence
 ## Implemented import/research controls
 
 CSV inputs are bounded to 512 KB, 500 rows, 40 unique columns and validated per row with Zod. Formula-like input is stored/rendered as plain text; no spreadsheet export or execution exists. Raw imported claims remain unverified. New import/review/draft tables deny direct writes and enforce RLS; security-definer RPCs explicitly validate tenant membership/owner role with fixed search paths. Approval requires a current review revision and a manually verified source-backed observation, enforced again by a lead status trigger. Review edits invalidate approval. Introductory templates make no weakness/budget claims, and the draft table cannot represent sent messages. No provider credentials or service-role keys are used. Generated local owner/GitHub credentials remain ignored and must never be committed.
+
+## Personal desktop and preparation
+
+The Electron shell has contextIsolation/sandbox/webSecurity enabled and nodeIntegration disabled. Only the local setup page receives a minimal validated IPC bridge. Application pages have no preload bridge, unexpected in-window navigation is blocked, permissions are denied, and external links are limited to HTTP(S). The standalone server binds only to loopback on an automatic port and exits with the app. Packaging excludes .env files and local credential artifacts.
+
+Preparation claims and completion require an authenticated organization owner. No anonymous worker RPC, scheduler secret or application service-role bypass exists. Production operator access is exact-email allowlisted and defaults to deny. Persistent opt-out checks are independent of CRM stages. Explicit RPC privilege revocation handles hosted default anon grants; membership checks remain mandatory inside privileged API functions. See AGENT_CONTROL.md for precise limitations.

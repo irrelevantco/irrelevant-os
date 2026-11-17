@@ -9,6 +9,140 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      agent_jobs: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          attempts: number
+          charged_credits: number | null
+          created_at: string
+          created_by: string
+          error: string | null
+          id: string
+          idempotency_key: string
+          input: Json
+          kind: string
+          lead_id: string | null
+          lease_token: string | null
+          lease_until: string | null
+          organization_id: string
+          reserved_credits: number
+          result: Json | null
+          run_after: string
+          snapshot: Json
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          attempts?: number
+          charged_credits?: number | null
+          created_at?: string
+          created_by?: string
+          error?: string | null
+          id?: string
+          idempotency_key: string
+          input?: Json
+          kind: string
+          lead_id?: string | null
+          lease_token?: string | null
+          lease_until?: string | null
+          organization_id: string
+          reserved_credits?: number
+          result?: Json | null
+          run_after?: string
+          snapshot?: Json
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          attempts?: number
+          charged_credits?: number | null
+          created_at?: string
+          created_by?: string
+          error?: string | null
+          id?: string
+          idempotency_key?: string
+          input?: Json
+          kind?: string
+          lead_id?: string | null
+          lease_token?: string | null
+          lease_until?: string | null
+          organization_id?: string
+          reserved_credits?: number
+          result?: Json | null
+          run_after?: string
+          snapshot?: Json
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_jobs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_jobs_organization_id_lead_id_fkey"
+            columns: ["organization_id", "lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
+      agent_settings: {
+        Row: {
+          daily_job_limit: number
+          explee_daily_credit_limit: number
+          id: string
+          organization_id: string
+          paused: boolean
+          postal_address: string
+          sender_email: string
+          sender_name: string
+          updated_at: string
+        }
+        Insert: {
+          daily_job_limit?: number
+          explee_daily_credit_limit?: number
+          id?: string
+          organization_id: string
+          paused?: boolean
+          postal_address?: string
+          sender_email?: string
+          sender_name?: string
+          updated_at?: string
+        }
+        Update: {
+          daily_job_limit?: number
+          explee_daily_credit_limit?: number
+          id?: string
+          organization_id?: string
+          paused?: boolean
+          postal_address?: string
+          sender_email?: string
+          sender_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_events: {
         Row: {
           action: string
@@ -118,6 +252,57 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_events: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          kind: string
+          lead_id: string
+          note: string
+          occurred_at: string
+          organization_id: string
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          kind: string
+          lead_id: string
+          note: string
+          occurred_at: string
+          organization_id: string
+          source?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          kind?: string
+          lead_id?: string
+          note?: string
+          occurred_at?: string
+          organization_id?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_events_organization_id_lead_id_fkey"
+            columns: ["organization_id", "lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["organization_id", "id"]
           },
         ]
       }
@@ -534,18 +719,78 @@ export type Database = {
           },
         ]
       }
+      suppression_entries: {
+        Row: {
+          created_at: string
+          created_by: string
+          domain: string | null
+          email: string | null
+          id: string
+          lead_id: string
+          organization_id: string
+          reason: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          domain?: string | null
+          email?: string | null
+          id?: string
+          lead_id: string
+          organization_id: string
+          reason: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          domain?: string | null
+          email?: string | null
+          id?: string
+          lead_id?: string
+          organization_id?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suppression_entries_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suppression_entries_organization_id_lead_id_fkey"
+            columns: ["organization_id", "lead_id"]
+            isOneToOne: true
+            referencedRelation: "leads"
+            referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      accept_agent_draft: {
+        Args: { job: string; org: string }
+        Returns: undefined
+      }
       approve_growth_review: {
         Args: { expected_revision: number; lead: string; org: string }
         Returns: undefined
       }
+      claim_agent_job: {
+        Args: { org: string }
+        Returns: Json
+      }
       commit_prospect_import: {
         Args: { batch: string; org: string }
         Returns: string
+      }
+      configure_agents: {
+        Args: { config: Json; org: string }
+        Returns: undefined
       }
       create_organization: {
         Args: { organization_name: string }
@@ -553,6 +798,36 @@ export type Database = {
       }
       create_prospect: { Args: { payload: Json }; Returns: string }
       crm_summary: { Args: { org: string }; Returns: Json }
+      enqueue_agent_job: {
+        Args: {
+          job_kind: string
+          lead?: string
+          org: string
+          parameters?: Json
+          request_key?: string
+        }
+        Returns: string
+      }
+      finish_agent_job: {
+        Args: {
+          failure?: string
+          job: string
+          lease: string
+          org: string
+          output?: Json
+        }
+        Returns: undefined
+      }
+      log_contact_event: {
+        Args: {
+          event_at: string
+          event_kind: string
+          event_note: string
+          lead: string
+          org: string
+        }
+        Returns: string
+      }
       preview_prospect_import: {
         Args: {
           batch_label: string
@@ -586,6 +861,10 @@ export type Database = {
           opening_script: string
           org: string
         }
+        Returns: undefined
+      }
+      stop_agent_jobs: {
+        Args: { job?: string; org: string }
         Returns: undefined
       }
     }

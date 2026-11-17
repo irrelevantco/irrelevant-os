@@ -3,6 +3,8 @@ import { PageHeading } from "@/components/page-heading";
 import { OrganizationForm } from "@/components/forms";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { InstallApp } from "@/components/install-app";
+import Link from "next/link";
 export const metadata = { title: "Settings" };
 export default async function Settings() {
   const { organization, user, role } = await requireContext();
@@ -38,15 +40,23 @@ export default async function Settings() {
             against organization membership.
           </p>
           <div className="mt-5 border-t border-border pt-5">
-            <p className="eyebrow mb-3 text-muted-foreground">
-              Phase 1 boundaries
-            </p>
+            <p className="eyebrow mb-3 text-muted-foreground">Integrations</p>
             <p className="text-xs leading-6 text-muted-foreground">
-              Manual CRM operations are available. Discovery, AI reviews, email,
-              calendar, contracts, and payments are planned in later phases. No
-              external automations are connected.
+              Controlled preparation jobs and manual contact logging are
+              available in Agent control. Gmail sending, calendar sync,
+              contracts and payments are not connected.
             </p>
           </div>
+        </Card>
+        <Card className="p-6">
+          <h2 className="mb-5 text-base font-medium">Use it on your phone</h2>
+          <InstallApp />
+          <Link
+            href="/dashboard/agents"
+            className="mt-4 inline-block text-sm text-primary underline"
+          >
+            Open agent control
+          </Link>
         </Card>
         <Card className="p-6">
           <h2 className="mb-2 text-base font-medium">

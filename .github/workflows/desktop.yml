@@ -1,0 +1,31 @@
+name: Personal Windows application
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows-package:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm.cmd ci
+      - run: npm.cmd run build
+      - name: Package pinned Electron and standalone application
+        run: python scripts/package-desktop.py --platform win32
+      - name: Verify native Windows desktop startup
+        shell: pwsh
+        run: |
+          $env:DESKTOP_EXECUTABLE = Join-Path $env:GITHUB_WORKSPACE 'work\desktop-release\iRRELEVANT-OS-win32-x64\iRRELEVANT OS.exe'
+          node tests/desktop/smoke.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: iRRELEVANT-OS-Windows-x64-v0.2.0
+          path: |
+            work/desktop-release/*.zip
+            work/desktop-release/*.sha256
+          retention-days: 3

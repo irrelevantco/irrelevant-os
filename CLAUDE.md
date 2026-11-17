@@ -19,3 +19,5 @@ Commands and setup are in README.md. `.env.local`, `work/`, `.next/`, and browse
 
 - Read docs/PROSPECT_BATCH_001.md for import/research contracts. Never convert supplied hypotheses or issue columns into verified findings. Only explicit owner approval of a current sourced review may enable Ready for Outreach. All email records must remain draft-only.
 - Preserve original migrations; add versioned migrations without resetting existing organizations or data. Local startup uses port 3030; Windows and cloud databases are distinct.
+
+- Read docs/AGENT_CONTROL.md and docs/PERSONAL_APP.md for preparation jobs, suppression, owner-only worker authorization and the portable Electron shell. Keep the renderer sandboxed with no Node integration. Never package .env files, local-owner credentials or service-role keys. Desktop setup accepts publishable/anon keys only. Git autodeployment is explicitly gated until commercial hosting is approved.

@@ -38,3 +38,7 @@ Evidence, discovery jobs, qualification versions, audits/approvals, encrypted Go
 ## Migration 202611170002 — prospect batch and research
 
 Additive migration preserves existing CRM/organization records. New RLS tables: import_batches, import_rows, growth_reviews, growth_review_points and outreach_drafts. Leads gain research_priority, audit_hypothesis_not_verified and explicitly unverified research_metadata. Imports and manual inserts share a tenant-level advisory lock and normalized identity guard. Import rows retain mapped data, original data, error/status and associated lead. Preview/commit RPCs require owner role and serialize replays. Review save RPCs require membership and expected revision; approval requires ownership and sourced verified evidence. Editing revokes approval and demotes Ready leads. Direct approval/result/status forgery is forbidden. Outreach status is constrained to draft. See PROSPECT_BATCH_001.md for definitions and batch results.
+
+## Preparation extension
+
+Migration `20261117175427_agent_control.sql` adds agent_settings, contact_events, suppression_entries and agent_jobs, all with RLS. Mutations require scoped authenticated owner/member RPCs. There is no anonymous worker API. `20261117203425_explicit_rpc_privileges.sql` explicitly removes anon/PUBLIC execute grants that hosted default privileges may add. See AGENT_CONTROL.md for leases, caps, contact truth and stale-proposal rules.

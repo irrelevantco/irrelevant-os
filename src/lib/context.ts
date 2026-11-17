@@ -3,6 +3,7 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient, isConfigured } from "./supabase/server";
+import { operatorAllowed } from "./operator-access";
 export const requireUser = cache(async () => {
   if (!isConfigured()) redirect("/setup");
   const db = await createClient();
@@ -11,6 +12,14 @@ export const requireUser = cache(async () => {
     error,
   } = await db.auth.getUser();
   if (error || !user) redirect("/login");
+  if (
+    !operatorAllowed(
+      user.email,
+      process.env.OPERATOR_EMAIL_ALLOWLIST,
+      process.env.NODE_ENV === "production",
+    )
+  )
+    redirect("/login?access=restricted");
   return { db, user };
 });
 export const requireContext = cache(async () => {

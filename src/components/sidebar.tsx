@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Activity,
+  Workflow,
   FileInput,
   NotebookPen,
   Mail,
@@ -21,6 +22,7 @@ const items = [
   { href: "/dashboard/imports", label: "Imports", icon: FileInput },
   { href: "/dashboard/research", label: "Research", icon: NotebookPen },
   { href: "/dashboard/outreach", label: "Outreach drafts", icon: Mail },
+  { href: "/dashboard/agents", label: "Agent control", icon: Workflow },
   { href: "/dashboard/activity", label: "Activity", icon: Activity },
   { href: "/dashboard/settings", label: "Settings", icon: Settings2 },
 ];
@@ -79,7 +81,7 @@ export function Sidebar({ organization }: { organization: string }) {
         </div>
         <div className="flex items-center justify-between">
           <span className="eyebrow text-muted-foreground">
-            Foundation / v0.1
+            Acquisition / v0.2
           </span>
           <span className="size-1.5 rounded-full bg-primary" />
         </div>

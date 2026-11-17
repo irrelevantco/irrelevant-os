@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { OutreachDraftForm } from "@/components/research/review-form";
 import { initialOutreach, PILLARS } from "@/lib/reviews";
+import { ContactEventForm } from "@/components/agents/forms";
 export const metadata = { title: "Draft preparation" };
 export default async function Preparation({
   params,
@@ -25,6 +26,17 @@ export default async function Preparation({
     .eq("lead_id", id)
     .single();
   if (result.error) throw new Error("Could not load outreach draft.");
+  const events = await db
+    .from("contact_events")
+    .select("id,kind,occurred_at,note")
+    .eq("organization_id", organization.id)
+    .eq("lead_id", id)
+    .order("created_at", { ascending: false })
+    .limit(20);
+  if (events.error)
+    throw new Error(
+      "Could not load contact history. Apply the agent migration.",
+    );
   const draft = result.data.email_draft
     ? result.data
     : {
@@ -55,6 +67,28 @@ export default async function Preparation({
             <Badge>Draft status enforced</Badge>
           </div>
           <OutreachDraftForm draft={draft} followUp={lead.next_follow_up} />
+          <section className="mt-8 border-t border-border pt-6">
+            <h2 className="mb-4 text-lg">Actual contact history</h2>
+            <p className="mb-4 text-xs leading-6 text-muted-foreground">
+              Manually record conversations that took place outside this
+              application. Drafts do not count as outreach. Replies stop
+              follow-up preparation; opt-outs persist on the suppression list.
+            </p>
+            <ContactEventForm lead={id} />
+            <ul className="mt-5 space-y-4">
+              {events.data.map((e) => (
+                <li key={e.id} className="border-t border-border pt-3 text-xs">
+                  <p>
+                    {e.kind.replaceAll("_", " ")} / {e.occurred_at.slice(0, 10)}{" "}
+                    / manually logged
+                  </p>
+                  <p className="mt-2 whitespace-pre-wrap break-words text-muted-foreground">
+                    {e.note}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </section>
         </Card>
         <div className="min-w-0 space-y-5">
           <Card className="p-5">

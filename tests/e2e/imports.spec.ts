@@ -28,13 +28,11 @@ test("CSV preview, mapping, import, research approval and draft preparation", as
   ).toBeVisible();
   await page.getByRole("link", { name: "Imports", exact: true }).click();
   const csv = `Company,City,Sector,URL,Phone,Priority,Hypothesis\n${name},Erie PA,Cleaning,https://${run}.example.test,814-555-0100,A,Unverified synthetic research question\n${name.toUpperCase()},erie pa,Cleaning,https://www.${run}.example.test/path,,A,Duplicate synthetic row\nX,Erie PA,Cleaning,javascript:alert(1),,B,Invalid synthetic row\nSynthetic Other ${run},Warren PA,HVAC,,814-555-0101,C,Another unverified question`;
-  await page
-    .getByLabel("CSV file")
-    .setInputFiles({
-      name: "synthetic-batch.csv",
-      mimeType: "text/csv",
-      buffer: Buffer.from(csv),
-    });
+  await page.getByLabel("CSV file").setInputFiles({
+    name: "synthetic-batch.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(csv),
+  });
   await page.getByRole("button", { name: "Read uploaded CSV" }).click();
   await expect(
     page.getByRole("heading", { name: "Map your columns" }),
@@ -144,6 +142,74 @@ test("CSV preview, mapping, import, research approval and draft preparation", as
   await expect
     .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
     .toBeLessThanOrEqual(page.viewportSize()!.width);
+  await page.getByRole("link", { name: "Agent control", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Work worth approving." }),
+  ).toBeVisible();
+  await page.getByLabel("Pause preparation agents", { exact: true }).uncheck();
+  await page
+    .getByLabel("Sender name", { exact: true })
+    .fill("Synthetic Operator");
+  await page
+    .getByLabel("Sender email", { exact: true })
+    .fill("hello@example.test");
+  await page
+    .getByLabel("Business postal address", { exact: true })
+    .fill("123 Synthetic Test Street");
+  await page
+    .getByRole("button", { name: "Save limits and sender", exact: true })
+    .click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Limits saved." }),
+  ).toBeVisible();
+  await page
+    .getByLabel("Preparation workflow", { exact: true })
+    .selectOption("outreach_draft");
+  await page
+    .getByLabel("Prospect", { exact: true })
+    .selectOption({ label: name });
+  await page
+    .getByRole("button", { name: "Queue preparation", exact: true })
+    .click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Job queued." }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Run next queued job", exact: true })
+    .click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Preparation processed." }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Draft only. Accepting copies", { exact: false }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("checkbox", { name: /I reviewed this proposal/ })
+    .check();
+  await page
+    .getByRole("button", { name: "Accept as editable draft", exact: true })
+    .click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Proposal copied" }),
+  ).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+    .toBeLessThanOrEqual(page.viewportSize()!.width);
+  await page
+    .getByRole("button", { name: "Pause and stop all jobs", exact: true })
+    .click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Agents paused" }),
+  ).toBeVisible();
+  await page
+    .getByRole("link", { name: "Open prospect preparation", exact: true })
+    .click();
+  await expect(
+    page.getByLabel("Personalized email draft", { exact: true }),
+  ).toHaveValue(/Synthetic browser test observation/);
+  await expect(
+    page.getByLabel("Personalized email draft", { exact: true }),
+  ).toHaveValue(/123 Synthetic Test Street/);
   await page.getByRole("link", { name: "Edit review", exact: true }).click();
   await page
     .getByLabel("Digital Presence recommendation", { exact: true })

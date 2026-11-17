@@ -16,6 +16,7 @@ import {
   type ActionState,
 } from "@/lib/domain";
 
+import { operatorAllowed } from "@/lib/operator-access";
 function databaseMessage(code?: string) {
   if (code === "23505")
     return "This business already exists in this organization. Check its website or name and location.";
@@ -38,6 +39,16 @@ export async function signIn(
     .object({ email: z.email().max(254), password: z.string().min(1).max(128) })
     .safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: validationMessage(parsed.error) };
+  if (
+    !operatorAllowed(
+      parsed.data.email,
+      process.env.OPERATOR_EMAIL_ALLOWLIST,
+      process.env.NODE_ENV === "production",
+    )
+  )
+    return {
+      error: "This private workspace is limited to approved operator accounts.",
+    };
   const db = await createClient();
   const { error } = await db.auth.signInWithPassword(parsed.data);
   if (error)
@@ -53,6 +64,16 @@ export async function signUp(
 ): Promise<ActionState> {
   const parsed = authSchema.safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: validationMessage(parsed.error) };
+  if (
+    !operatorAllowed(
+      parsed.data.email,
+      process.env.OPERATOR_EMAIL_ALLOWLIST,
+      process.env.NODE_ENV === "production",
+    )
+  )
+    return {
+      error: "This private workspace is limited to approved operator accounts.",
+    };
   const db = await createClient();
   const { data, error } = await db.auth.signUp({
     ...parsed.data,
