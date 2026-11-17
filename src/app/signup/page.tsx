@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/forms";
 import { AuthShell } from "@/components/auth-shell";
 import { createClient, isConfigured } from "@/lib/supabase/server";
+// Desktop builds intentionally contain no backend credentials; read configuration per request.
+export const dynamic = "force-dynamic";
 export default async function Signup() {
   if (!isConfigured()) redirect("/setup");
   const db = await createClient();

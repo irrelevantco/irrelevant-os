@@ -3,6 +3,8 @@ import { requireUser } from "@/lib/context";
 import { AuthShell } from "@/components/auth-shell";
 import { OrganizationForm } from "@/components/forms";
 import { signOut } from "@/app/actions";
+// Desktop builds intentionally contain no backend credentials; read configuration per request.
+export const dynamic = "force-dynamic";
 export default async function Onboarding() {
   const { db, user } = await requireUser();
   const { data, error } = await db

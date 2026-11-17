@@ -5,6 +5,8 @@ import { AuthShell } from "@/components/auth-shell";
 import { createClient, isConfigured } from "@/lib/supabase/server";
 import { operatorAllowed } from "@/lib/operator-access";
 import { signOut } from "@/app/actions";
+// Desktop builds intentionally contain no backend credentials; read configuration per request.
+export const dynamic = "force-dynamic";
 export default async function Login({
   searchParams,
 }: {
