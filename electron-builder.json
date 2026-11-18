@@ -19,7 +19,7 @@
     "allowElevation": false,
     "allowToChangeInstallationDirectory": true,
     "deleteAppDataOnUninstall": false,
-    "runAfterFinish": false,
+    "runAfterFinish": true,
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true
   },

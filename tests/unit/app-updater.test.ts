@@ -47,7 +47,7 @@ describe("approved desktop updates", () => {
   it("installs only after both explicit confirmations", async () => {
     const { updater, control } = fixture();
     await control.check(true);
-    expect(updater.quitAndInstall).toHaveBeenCalledExactlyOnceWith(false, true);
+    expect(updater.quitAndInstall).toHaveBeenCalledExactlyOnceWith(true, true);
   });
   it("never installs after a failed/checksum-rejected download or exposes signed URLs", async () => {
     const { updater, showDialog, control } = fixture();

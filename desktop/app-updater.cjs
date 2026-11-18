@@ -73,7 +73,7 @@ function createAppUpdater({
         });
         return;
       }
-      updater.quitAndInstall(false, true);
+      updater.quitAndInstall(true, true);
     } catch {
       if (userAction)
         await showDialog({

@@ -55,7 +55,7 @@ async function runningPids() {
       "-Command",
       "Get-CimInstance Win32_Process -Filter \"Name = 'iRRELEVANT OS.exe'\" | Select-Object ProcessId,ExecutablePath | ConvertTo-Json -Compress",
     ],
-    { encoding: "utf8" },
+    { encoding: "utf8", timeout: 15000, windowsHide: true },
   );
   if (r.status !== 0) throw Error("Windows process enumeration failed.");
   const rows = [JSON.parse(r.stdout.trim() || "[]")].flat();
@@ -77,6 +77,7 @@ async function runningPids() {
   return pids;
 }
 try {
+  console.log("Native fixture: installing release Setup.");
   run(
     path.resolve(`work/windows-installer/iRRELEVANT-OS-Setup-${current}.exe`),
     ["/S", `/D=${install}`],
@@ -94,11 +95,13 @@ try {
   )
     throw Error("Unexpected public update feed.");
   // Verify the installed app's full setup/login flow, not only the ZIP executable.
+  console.log("Native fixture: verifying installed application UI.");
   run(process.execPath, ["tests/desktop/smoke.mjs"], {
     ...process.env,
     DESKTOP_EXECUTABLE: exe,
   });
   // A second installer exists only in this isolated test output. It is never published.
+  console.log("Native fixture: preparing next-version installer.");
   const fixtureRuntime = path.resolve("work/update-fixture-runtime");
   await cp("work/desktop-release/iRRELEVANT-OS-win32-x64", fixtureRuntime, {
     recursive: true,
@@ -109,10 +112,37 @@ try {
   );
   const pkg = JSON.parse(await readFile(fixturePackage, "utf8"));
   pkg.version = next;
+  pkg.main = "verify-update.cjs";
   await writeFile(fixturePackage, JSON.stringify(pkg, null, 2));
+  // Fixture-only bootstrap reports from the actually restarted app after its
+  // production main creates a loaded window. It avoids a second debugger attach
+  // to an unmanaged relaunch and never enters the published installer.
+  await writeFile(
+    path.join(fixtureRuntime, "resources/app/verify-update.cjs"),
+    `
+const {app,safeStorage}=require('electron');
+const fs=require('node:fs/promises'),path=require('node:path');
+const profile=${JSON.stringify(profile)};
+process.env.IRRELEVANT_DESKTOP_PROFILE=profile;
+app.setPath('userData',profile);
+app.once('browser-window-created',(_event,window)=>{
+ window.webContents.once('did-finish-load',async()=>{
+  try{
+   const value=await fs.readFile(path.join(profile,'google-setup.bin'));
+   const report={version:app.getVersion(),windowLoaded:true,
+    marker:await fs.readFile(path.join(profile,'keep.txt'),'utf8'),
+    googleMarker:JSON.parse(safeStorage.decryptString(value)).test_marker};
+   await fs.writeFile(path.join(profile,'updated-app-report.json'),JSON.stringify(report));
+  }catch{await fs.writeFile(path.join(profile,'updated-app-report.json'),JSON.stringify({error:'Retained profile verification failed'}));}
+  setTimeout(()=>app.quit(),100);
+ });
+});
+require('./main.cjs');
+`,
+  );
   const config = JSON.parse(await readFile("electron-builder.json", "utf8"));
   config.directories.output = path.resolve("work/update-fixture");
-  config.extraMetadata = { version: next };
+  config.extraMetadata = { version: next, main: "verify-update.cjs" };
   await writeFile("work/update-fixture-config.json", JSON.stringify(config));
   run(
     process.execPath,
@@ -129,6 +159,7 @@ try {
     ],
     { ...process.env, CSC_IDENTITY_AUTO_DISCOVERY: "false" },
   );
+  console.log("Native fixture: next-version installer built.");
   const fixtureName = `iRRELEVANT-OS-Setup-${next}.exe`;
   const bytes = await readFile(path.join("work/update-fixture", fixtureName));
   const metadata = yaml.load(
@@ -176,6 +207,7 @@ try {
     env: environment,
     timeout: 60000,
   });
+  console.log("Native fixture: update client launched.");
   await expect(
     (await electronApp.firstWindow()).getByRole("heading", {
       name: "Build your position.",
@@ -194,6 +226,7 @@ try {
     return bytes.toString("base64");
   });
   const initialPid = await electronApp.evaluate(() => process.pid);
+  console.log("Native fixture: validating process monitor.");
   if (!(await runningPids()).includes(String(initialPid)))
     throw Error(
       "Native process monitor cannot identify the running fixture before update.",
@@ -260,11 +293,33 @@ try {
     )
     .toBe(next);
   console.log("Native updater installed fixture version", next);
+  console.log(
+    "Native fixture: waiting for the restarted application window report.",
+  );
+  let retained;
   await expect
-    .poll(async () => (await runningPids()).length, { timeout: 60000 })
-    .toBeGreaterThan(0);
-  for (const pid of await runningPids())
-    spawnSync("taskkill", ["/PID", pid, "/T", "/F"], { windowsHide: true });
+    .poll(
+      async () => {
+        try {
+          retained = JSON.parse(
+            await readFile(
+              path.join(profile, "updated-app-report.json"),
+              "utf8",
+            ),
+          );
+          return retained;
+        } catch {
+          return null;
+        }
+      },
+      { timeout: 120000 },
+    )
+    .toEqual({
+      version: next,
+      windowLoaded: true,
+      marker,
+      googleMarker: "Synthetic retained Google setup",
+    });
   if (
     (await readFile(path.join(profile, "keep.txt"), "utf8")) !== marker ||
     (await readFile(path.join(profile, "google-setup.bin"))).toString(
@@ -272,38 +327,21 @@ try {
     ) !== encrypted
   )
     throw Error("Update did not preserve profile data.");
-  electronApp = await _electron.launch({
-    executablePath: exe,
-    env: environment,
-    timeout: 60000,
-  });
-  const retained = await electronApp.evaluate(async ({ app, safeStorage }) => {
-    const value = await process
-      .getBuiltinModule("node:fs/promises")
-      .readFile(
-        process
-          .getBuiltinModule("node:path")
-          .join(app.getPath("userData"), "google-setup.bin"),
-      );
-    return {
-      version: app.getVersion(),
-      value: JSON.parse(safeStorage.decryptString(value)).test_marker,
-    };
-  });
-  if (
-    retained.version !== next ||
-    retained.value !== "Synthetic retained Google setup"
-  )
-    throw Error(
-      "New version or retained encrypted setup could not be verified.",
-    );
   console.log(
     "Windows installed update cycle passed: installer → installed UI → corrupt checksum rejected → valid update applied/restarted → retained workspace marker and decryptable Google setup. No external API or message calls.",
   );
 } finally {
-  await electronApp?.close().catch(() => undefined);
+  if (electronApp)
+    await Promise.race([
+      electronApp.close().catch(() => undefined),
+      new Promise((resolve) => setTimeout(resolve, 15000)),
+    ]);
+  server?.closeAllConnections();
   server?.close();
   for (const pid of await runningPids())
-    spawnSync("taskkill", ["/PID", pid, "/T", "/F"], { windowsHide: true });
+    spawnSync("taskkill", ["/PID", pid, "/T", "/F"], {
+      windowsHide: true,
+      timeout: 15000,
+    });
   await rm(folder, { recursive: true, force: true }).catch(() => undefined);
 }
