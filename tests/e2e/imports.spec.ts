@@ -241,6 +241,10 @@ test("CSV preview, mapping, import, research approval and draft preparation", as
     name: /I reviewed the recipient, subject and full message/,
   });
   await expect(approval).toBeDisabled();
+  await expect(page.locator('input[name="expected_body_base64"]')).toHaveValue(
+    /^[A-Za-z0-9+/]+={0,2}$/,
+  );
+  await expect(page.locator('input[name="expected_body"]')).toHaveCount(0);
   await expect(approval).toHaveAttribute(
     "aria-describedby",
     "email-send-blockers",

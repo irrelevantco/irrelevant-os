@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { SendEmailForm } from "@/components/acquisition/forms";
-import { messageBody } from "@/lib/acquisition/contracts";
+import { messageBody, encodeApprovalBody } from "@/lib/acquisition/contracts";
 import { connection } from "@/lib/acquisition/google";
 import { sendBlockers } from "@/lib/acquisition/send-readiness";
 import { acquisitionSchema } from "@/lib/acquisition/state";
@@ -168,6 +168,7 @@ export default async function Preparation({
                   requestKey={randomUUID()}
                   recipient={lead.business.email}
                   body={approvedBody}
+                  bodySnapshot={encodeApprovalBody(approvedBody)}
                   enabled={canSend}
                 />
               ) : (

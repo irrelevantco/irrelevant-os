@@ -7,6 +7,7 @@ import {
   automationSchema,
   meetingSchema,
   meetingTimes,
+  decodeApprovalBody,
 } from "@/lib/acquisition/contracts";
 import { accessToken, rpc, credentialKeyId } from "@/lib/acquisition/google";
 import {
@@ -113,7 +114,7 @@ export async function sendApprovedEmail(
         request_key: z.uuid(),
         draft_updated_at: z.string(),
         recipient: z.email(),
-        expected_body: z.string().min(1).max(14000),
+        expected_body_base64: z.string().min(1).max(75000),
         subject: z
           .string()
           .trim()
@@ -123,10 +124,13 @@ export async function sendApprovedEmail(
         confirmed: z.literal("on"),
       })
       .parse(Object.fromEntries(form));
+    const { expected_body_base64, ...approval } = input;
+    const expectedBody = decodeApprovalBody(expected_body_base64);
     const token = await accessToken(c.db, c.organization.id, c.user.id);
     const result = z.object({ id: z.uuid() }).parse(
       await rpc(c.db, "approve_email_delivery", c.organization.id, {
-        ...input,
+        ...approval,
+        expected_body: expectedBody,
         confirmed: true,
       }),
     );

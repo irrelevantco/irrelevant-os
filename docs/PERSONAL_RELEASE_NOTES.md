@@ -1,4 +1,6 @@
-Portable Windows x64 personal preview **v0.3.1** fixes the unexplained disabled email-approval checkbox.
+Portable Windows x64 personal preview **v0.3.1** fixes the false “Recipient or sender details changed” error and explains disabled email approval.
+
+Browser form submission converts line endings, which previously changed the hidden approval text before the exact database comparison. Approval now transports the saved preview in a bounded UTF-8/base64 envelope and decodes it on the server. Original spaces, Unicode, paragraph breaks and sender/footer content remain unchanged; actual recipient/body edits still invalidate approval. No comparison or approval requirement was removed.
 
 The outreach page now shows **Why email approval is locked**, with specific requirements and links to resolve each one: Google connection and Gmail sending permission, enabled sending controls, resumed agents, saved sender identity/postal address, saved draft, valid recipient, current approved Growth Review and open lead status. The checkbox remains locked until the page requirements pass. Server-side suppression, revision, exact-message approval and daily-limit checks remain mandatory.
 
@@ -6,7 +8,7 @@ Google consent must use the same CRM account and workspace as the Windows app. C
 
 Close the old program, extract the entire ZIP, and run **iRRELEVANT OS.exe from the new folder**. Confirm **v0.3.1** in the sidebar or Workspace → About. Keep Docker and your existing backend running. This patch introduces no database migration and does not replace your saved OAuth setup, accounts, leads or notes. The neon iR executable/window icon is retained.
 
-Validation includes type checking, zero-warning lint, production build and 131 unit tests. Desktop/mobile browser checks cover visible blocker explanations, remedy links, disabled approval and preserved drafts. Publication requires exact-commit CI (including all 222 database assertions and eight browser workflows), native Windows startup and a live bounded free-provider check. No test email or Calendar invitation is sent by those checks; Google transports use synthetic responses.
+Validation includes type checking, zero-warning lint, production build and 137 unit tests. Regression tests reproduce multipart newline conversion and verify exact mixed-line-ending/Unicode approval against local PostgreSQL. Desktop/mobile browser checks cover visible blocker explanations, remedy links, disabled approval and preserved drafts. Publication requires exact-commit CI (including all 222 database assertions and eight browser workflows), native Windows startup and a live bounded free-provider check. No test email or Calendar invitation is sent by those checks; Google transports use synthetic responses.
 
 Hourly discovery and agreed appointment/value controls from v0.3.0 remain available. This patch does not turn on sending or create a Google connection. Live Google sending must be tested through your approved message in your own connected workspace. Phone hosting and an always-on hosted runner remain pending setup. This remains an unsigned personal preview, not an audited production release.
 

@@ -94,6 +94,37 @@ export function messageBody(body: string, name: string, address: string) {
     );
   return `${body}\n\n${name}\niRRELEVANT CO\n${SENDER_EMAIL}\n${address}\n\nTo opt out of further contact, reply and let us know.`;
 }
+// HTML multipart form submission normalizes line endings, including hidden
+// inputs. Use an ASCII envelope so the exact saved UTF-8 preview survives it.
+export function encodeApprovalBody(body: string) {
+  z.string().min(1).max(14000).parse(body);
+  return Buffer.from(body, "utf8").toString("base64");
+}
+export function decodeApprovalBody(encoded: string) {
+  const invalid = () =>
+    new Error(
+      "Draft approval preview is invalid. Reload the page and review it again.",
+    );
+  if (
+    !z
+      .string()
+      .min(1)
+      .max(75000)
+      .regex(/^[A-Za-z0-9+/]+={0,2}$/)
+      .safeParse(encoded).success
+  )
+    throw invalid();
+  const bytes = Buffer.from(encoded, "base64");
+  const body = bytes.toString("utf8");
+  if (
+    bytes.toString("base64") !== encoded ||
+    !Buffer.from(body, "utf8").equals(bytes) ||
+    !body.length ||
+    body.length > 14000
+  )
+    throw invalid();
+  return body;
+}
 export function emailRaw(to: string, subject: string, body: string) {
   z.email().parse(to);
   if (/[\r\n]/.test(to + subject) || !subject.trim() || subject.length > 160)

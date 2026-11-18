@@ -240,6 +240,7 @@ export function SendEmailForm({
   requestKey,
   recipient,
   body,
+  bodySnapshot,
   enabled,
 }: {
   leadId: string;
@@ -247,6 +248,7 @@ export function SendEmailForm({
   requestKey: string;
   recipient: string;
   body: string;
+  bodySnapshot: string;
   enabled: boolean;
 }) {
   const [state, action] = useActionState(sendApprovedEmail, {});
@@ -254,7 +256,7 @@ export function SendEmailForm({
     <form action={action} className="space-y-4">
       <input type="hidden" name="lead_id" value={leadId} />
       <input type="hidden" name="recipient" value={recipient} />
-      <input type="hidden" name="expected_body" value={body} />
+      <input type="hidden" name="expected_body_base64" value={bodySnapshot} />
       <input type="hidden" name="draft_updated_at" value={draftAt} />
       <input type="hidden" name="request_key" value={requestKey} />
       <p className="break-all text-sm">To: {recipient}</p>

@@ -4,7 +4,11 @@ import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { assertLocalTestEnvironment } from "./local-guard";
 import { PILLARS } from "../../src/lib/reviews";
-import { messageBody } from "../../src/lib/acquisition/contracts";
+import {
+  messageBody,
+  encodeApprovalBody,
+  decodeApprovalBody,
+} from "../../src/lib/acquisition/contracts";
 const { url, key } = assertLocalTestEnvironment();
 const make = () =>
   createClient(url, key, {
@@ -445,7 +449,8 @@ await owner.rpc("approve_growth_review", { org, lead, expected_revision: 2 });
 await owner.rpc("save_outreach_draft", {
   org,
   lead,
-  email_body: "Synthetic draft. Never sent.\n",
+  email_body:
+    "Synthetic draft. Never sent.\n\nUTF-8: café — 🟢\r\nMixed line endings and trailing whitespace.  \n",
   opening_script: "Synthetic script",
 });
 let draft = (
@@ -456,6 +461,25 @@ let draft = (
     .eq("lead_id", lead)
     .single()
 ).data!;
+const exactPreview = messageBody(
+  draft.email_draft,
+  agentSettings.sender_name,
+  agentSettings.postal_address,
+);
+const approvalForm = new FormData();
+approvalForm.set("expected_body_base64", encodeApprovalBody(exactPreview));
+const submittedForm = await new Request("http://localhost/synthetic-approval", {
+  method: "POST",
+  body: approvalForm,
+}).formData();
+const submittedPreview = decodeApprovalBody(
+  String(submittedForm.get("expected_body_base64")),
+);
+assert.equal(
+  submittedPreview,
+  exactPreview,
+  "Multipart transport must preserve exact saved text",
+);
 const approval = {
   lead_id: lead,
   request_key: randomUUID(),
@@ -463,11 +487,7 @@ const approval = {
   subject: "Synthetic approval",
   confirmed: true,
   recipient: `public@${run}.example.test`,
-  expected_body: messageBody(
-    draft.email_draft,
-    agentSettings.sender_name,
-    agentSettings.postal_address,
-  ),
+  expected_body: submittedPreview,
 };
 check(
   Boolean(

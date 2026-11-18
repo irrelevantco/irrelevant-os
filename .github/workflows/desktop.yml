@@ -60,4 +60,4 @@ jobs:
         run: |
           $archive = Get-ChildItem 'work/desktop-release/*.zip' | Select-Object -First 1
           $checksum = Get-ChildItem 'work/desktop-release/*.sha256' | Select-Object -First 1
-          gh release create v0.3.1-personal-preview $archive.FullName $checksum.FullName --target $env:GITHUB_SHA --prerelease --title 'iRRELEVANT OS — Clear Email Approval Requirements' --notes-file docs/PERSONAL_RELEASE_NOTES.md
+          gh release create v0.3.1-personal-preview $archive.FullName $checksum.FullName --target $env:GITHUB_SHA --prerelease --title 'iRRELEVANT OS — Repair Exact Email Approval' --notes-file docs/PERSONAL_RELEASE_NOTES.md

@@ -27,6 +27,10 @@ Configure sender name, the exact company sender email and a real business postal
 
 The server checks owner identity, Google scope, suppression, pause state, saved draft/review revision, recipient, full body and daily quota again. Five attempts/day/organization is the fixed personal-preview limit, including uncertain attempts. Duplicate fingerprints/request keys cannot send twice. A confirmed Gmail message ID creates actual outbound contact; creating a draft or approving a proposal does not. An uncertain HTTP/DB result is never automatically retried. Check Gmail and recorded delivery history before any further action.
 
+### False message-change error in version 0.3.0
+
+The error “Recipient or sender details changed; review the full email again” could occur even without an edit: multipart form submission normalized the hidden message line endings. Version 0.3.1 transports a bounded ASCII encoding of the original UTF-8 preview and decodes it before the existing exact comparison. This preserves the approved content rather than weakening validation. Update the complete Windows bundle and reopen the saved draft; no database migration or new Google credentials are needed. Actual recipient, sender or message changes still require reviewing the new preview.
+
 ### Approval checkbox is disabled
 
 Version 0.3.1 adds **Why email approval is locked** above the approval form. Each unmet page requirement includes its own remedy link: Google connection/sending scope, enabled sending controls, resumed agents, saved sender name/email/postal address, saved draft, valid business email, approved current Growth Review and an open lead status. Save the relevant changes, return to the draft and reload. Checkbox state alone is not authorization; the server still enforces current suppression, revisions, identity and the daily limit.
