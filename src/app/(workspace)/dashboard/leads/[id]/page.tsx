@@ -17,6 +17,7 @@ import { BusinessForm, LeadForm, NoteForm } from "@/components/forms";
 import { PageHeading } from "@/components/page-heading";
 import { StatusBadge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { LeadItem, LeadMenuButton } from "@/components/lead-actions";
 export const metadata = { title: "Lead details" };
 export default async function LeadDetail({
   params,
@@ -25,7 +26,7 @@ export default async function LeadDetail({
 }) {
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) notFound();
-  const { db, organization, user } = await requireContext();
+  const { db, organization, user, role } = await requireContext();
   const [result, notesResult] = await Promise.all([
     db
       .from("leads")
@@ -68,7 +69,17 @@ export default async function LeadDetail({
         eyebrow={`${b.industry} / ${b.location}`}
         title={b.name}
         description={`Added ${dateTime(lead.created_at)} · Source: ${b.source_type}`}
-        action={<StatusBadge status={lead.status} />}
+        action={
+          <LeadItem
+            lead={{ id: lead.id, name: b.name, updatedAt: lead.updated_at }}
+            canDelete={role === "owner"}
+            returnTo="/dashboard/leads"
+            className="flex items-center gap-2"
+          >
+            <StatusBadge status={lead.status} />
+            <LeadMenuButton />
+          </LeadItem>
+        }
       />
       <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
         <div className="min-w-0 space-y-6">

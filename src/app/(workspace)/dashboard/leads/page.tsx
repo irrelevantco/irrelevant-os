@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Columns3, Plus, Search } from "lucide-react";
+import { Columns3, Plus, Search, Trash2 } from "lucide-react";
 import { getLeads } from "@/lib/data";
 import { STATUSES } from "@/lib/domain";
 import { PageHeading } from "@/components/page-heading";
@@ -16,6 +16,7 @@ export default async function Leads({
     status?: string;
     page?: string;
     due?: string;
+    removed?: string;
   }>;
 }) {
   const p = await searchParams;
@@ -28,7 +29,12 @@ export default async function Leads({
     ? p.status!
     : "";
   const due = p.due === "1";
-  const { leads, count } = await getLeads({ search: q, status, page, due });
+  const { leads, count, canDelete } = await getLeads({
+    search: q,
+    status,
+    page,
+    due,
+  });
   const pageLink = (n: number) =>
     `/dashboard/leads?${new URLSearchParams({ q, status, page: String(n), ...(due ? { due: "1" } : {}) })}`;
   return (
@@ -38,7 +44,15 @@ export default async function Leads({
         title="Good fits. Real potential."
         description="Build a considered pipeline, with the context to move each opportunity forward."
         action={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            {canDelete && (
+              <Button asChild variant="outline">
+                <Link href="/dashboard/leads/trash">
+                  <Trash2 />
+                  Trash
+                </Link>
+              </Button>
+            )}
             <Button asChild variant="outline">
               <Link href="/dashboard/pipeline">
                 <Columns3 />
@@ -54,6 +68,14 @@ export default async function Leads({
           </div>
         }
       />
+      {p.removed === "1" && (
+        <p role="status" className="mb-5 text-sm text-primary">
+          Lead moved to Trash. Queued work was cancelled.{" "}
+          <Link href="/dashboard/leads/trash" className="underline">
+            View Trash
+          </Link>
+        </p>
+      )}
       <Card>
         <form className="flex flex-wrap items-end gap-3 border-b border-border p-4">
           <div className="min-w-44 flex-1">
@@ -102,7 +124,11 @@ export default async function Leads({
             </Link>
           )}
         </form>
-        <LeadsTable leads={leads} filtered={Boolean(q || status || due)} />
+        <LeadsTable
+          leads={leads}
+          canDelete={canDelete}
+          filtered={Boolean(q || status || due)}
+        />
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border p-4 text-xs text-muted-foreground">
           <span>
             {count

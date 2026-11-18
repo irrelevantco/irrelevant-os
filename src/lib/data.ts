@@ -34,7 +34,7 @@ export async function getLeads({
   limit?: number;
   due?: boolean;
 } = {}) {
-  const { db, organization } = await requireContext();
+  const { db, organization, role } = await requireContext();
   const offset = (Math.max(1, page) - 1) * limit;
   let query = db
     .from("leads")
@@ -60,5 +60,9 @@ export async function getLeads({
     .order("updated_at", { ascending: false })
     .range(offset, offset + limit - 1);
   if (error) throw new Error("Could not load leads. Please try again.");
-  return { leads: data as Lead[], count: count ?? 0 };
+  return {
+    leads: data as Lead[],
+    count: count ?? 0,
+    canDelete: role === "owner",
+  };
 }

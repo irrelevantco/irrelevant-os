@@ -89,8 +89,9 @@ describe("local database updater", () => {
       "20261117203425",
       "20261117221021",
       "20261117231231",
+      "20261118153305",
     ]);
-    expect(f.writes).toHaveLength(4);
+    expect(f.writes).toHaveLength(5);
     expect(f.writes.every((s) => s.trim().endsWith("commit;"))).toBe(true);
     expect(f.writes[0]).toContain("values ('20261117175427')");
     expect(result.preserved.leads).toBe(30);
@@ -98,7 +99,7 @@ describe("local database updater", () => {
   it("repeated upgrade writes nothing when the database is current", () => {
     const f = fake({
       versions:
-        "202611170001\n202611170002\n20261117175427\n20261117203425\n20261117221021\n20261117231231",
+        "202611170001\n202611170002\n20261117175427\n20261117203425\n20261117221021\n20261117231231\n20261118153305",
     });
     expect(upgradeLocal({ ...options, execute: f.execute }).applied).toEqual(
       [],

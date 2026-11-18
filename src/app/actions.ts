@@ -19,7 +19,7 @@ import {
 import { operatorAllowed } from "@/lib/operator-access";
 function databaseMessage(code?: string) {
   if (code === "23505")
-    return "This business already exists in this organization. Check its website or name and location.";
+    return "This business already exists in this organization. Check existing leads or Trash before adding it again.";
   if (code === "42501")
     return "Your account does not have permission to make this change.";
   return "The change could not be saved. Check your connection and try again.";

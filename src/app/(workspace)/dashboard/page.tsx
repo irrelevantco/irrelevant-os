@@ -174,7 +174,7 @@ export default async function Dashboard() {
             <ArrowRight className="size-3.5" />
           </Link>
         </div>
-        <LeadsTable leads={recent.leads} />
+        <LeadsTable leads={recent.leads} canDelete={recent.canDelete} />
       </Card>
       <div className="mt-7 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
         <span>Built for fit. Designed for follow-through.</span>

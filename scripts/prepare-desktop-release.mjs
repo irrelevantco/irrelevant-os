@@ -52,7 +52,7 @@ await writeFile(
 );
 await writeFile(
   "work/desktop-release-notes.md",
-  `Windows personal preview ${version}\n\nSource commit: ${sha}\n\nBuilt automatically after successful acquisition CRM checks. Includes the saved-message line-ending fix and native, approved app updates. Install the Setup edition once to receive future in-app updates. Existing local database, connection and Google setup are preserved.\n\nThis is an unsigned personal preview. Updates download only after you approve them and install only after you choose Install and restart. Save edits and finish pending sends first. No email or Calendar invitation is sent by release checks.\n\n[Setup and update guide](https://github.com/irrelevantco/irrelevant-os/blob/main/docs/PERSONAL_APP.md)\n`,
+  `Windows personal preview ${version}\n\nSource commit: ${sha}\n\n${await readFile("docs/PERSONAL_RELEASE_NOTES.md", "utf8")}\n\n[Setup and update guide](https://github.com/irrelevantco/irrelevant-os/blob/main/docs/PERSONAL_APP.md)\n`,
 );
 await appendFile(process.env.GITHUB_ENV, `APP_RELEASE_VERSION=${version}\n`);
 await appendFile(process.env.GITHUB_OUTPUT, "skip=false\n");

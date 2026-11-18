@@ -4,12 +4,15 @@ import type { Lead } from "@/lib/data";
 import { money } from "@/lib/utils";
 import { StatusBadge } from "./ui/badge";
 import { Button } from "./ui/button";
+import { LeadItem, LeadMenuButton } from "./lead-actions";
 export function LeadsTable({
   leads,
   filtered = false,
+  canDelete = false,
 }: {
   leads: Lead[];
   filtered?: boolean;
+  canDelete?: boolean;
 }) {
   if (!leads.length)
     return (
@@ -60,7 +63,18 @@ export function LeadsTable({
         </thead>
         <tbody className="divide-y divide-border">
           {leads.map((lead) => (
-            <tr key={lead.id} className="group hover:bg-secondary/35">
+            <LeadItem
+              key={lead.id}
+              as="tr"
+              lead={{
+                id: lead.id,
+                name: lead.business.name,
+                updatedAt: lead.updated_at,
+              }}
+              canDelete={canDelete}
+              returnTo="/dashboard/leads"
+              className="group hover:bg-secondary/35"
+            >
               <td className="px-5 py-4">
                 <Link
                   className="inline-flex items-center gap-3 focus-visible:rounded"
@@ -106,12 +120,13 @@ export function LeadsTable({
                 <Link
                   href={`/dashboard/leads/${lead.id}`}
                   aria-label={`Open ${lead.business.name}`}
-                  className="text-muted-foreground hover:text-primary"
+                  className="mr-2 inline-flex text-muted-foreground hover:text-primary"
                 >
                   <ArrowUpRight className="size-4" />
                 </Link>
+                <LeadMenuButton />
               </td>
-            </tr>
+            </LeadItem>
           ))}
         </tbody>
       </table>

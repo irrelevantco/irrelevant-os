@@ -87,7 +87,7 @@ try {
   const snapshot = () =>
     sql(
       dbName,
-      "select jsonb_build_object('businesses',(select jsonb_agg(to_jsonb(b)) from public.businesses b),'leads',(select jsonb_agg(to_jsonb(l)) from public.leads l),'notes',(select jsonb_agg(to_jsonb(n)) from public.lead_notes n),'reviews',(select jsonb_agg(to_jsonb(r)) from public.growth_reviews r),'points',(select jsonb_agg(to_jsonb(p)) from public.growth_review_points p),'drafts',(select jsonb_agg(to_jsonb(d)) from public.outreach_drafts d))::text;",
+      "select jsonb_build_object('businesses',(select jsonb_agg(to_jsonb(b)) from public.businesses b),'leads',(select jsonb_agg(to_jsonb(l)-'deleted_at'-'deleted_by') from public.leads l),'notes',(select jsonb_agg(to_jsonb(n)) from public.lead_notes n),'reviews',(select jsonb_agg(to_jsonb(r)) from public.growth_reviews r),'points',(select jsonb_agg(to_jsonb(p)) from public.growth_review_points p),'drafts',(select jsonb_agg(to_jsonb(d)) from public.outreach_drafts d))::text;",
     );
   const before = snapshot();
   check(
@@ -117,12 +117,20 @@ try {
         "20261117203425",
         "20261117221021",
         "20261117231231",
+        "20261118153305",
       ]),
     "Applied precisely the missing migrations",
   );
   check(
     snapshot() === before,
     "Accounts, prospect data, notes, unverified hypotheses, review and human drafts preserved byte-for-byte",
+  );
+  check(
+    sql(
+      dbName,
+      "select count(*) from public.leads where deleted_at is not null or deleted_by is not null;",
+    ) === "0",
+    "Existing leads are not removed by the upgrade",
   );
   check(
     sql(

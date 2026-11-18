@@ -567,6 +567,8 @@ export type Database = {
           business_id: string
           created_at: string
           created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
           estimated_value_cents: number | null
           id: string
           next_follow_up: string | null
@@ -581,6 +583,8 @@ export type Database = {
           business_id: string
           created_at?: string
           created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           estimated_value_cents?: number | null
           id?: string
           next_follow_up?: string | null
@@ -595,6 +599,8 @@ export type Database = {
           business_id?: string
           created_at?: string
           created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           estimated_value_cents?: number | null
           id?: string
           next_follow_up?: string | null
@@ -772,6 +778,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      change_lead_trash: {
+        Args: { org: string; lead: string; restore: boolean; expected_updated_at: string }
+        Returns: string
+      }
+      list_lead_trash: { Args: { org: string; page?: number }; Returns: Json }
+
       google_connection: { Args: { org: string; payload?: Json }; Returns: Json };
       acquisition_state: { Args: { org: string; payload?: Json }; Returns: Json };
       save_acquisition_settings: { Args: { org: string; payload?: Json }; Returns: Json };
