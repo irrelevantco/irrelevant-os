@@ -273,8 +273,14 @@ export function SendEmailForm({
         {body}
       </pre>
       <label className="flex gap-3 text-xs leading-6">
-        <input type="checkbox" name="confirmed" required disabled={!enabled} />I
-        reviewed the recipient, subject and full message above, including the
+        <input
+          type="checkbox"
+          name="confirmed"
+          required
+          disabled={!enabled}
+          aria-describedby={!enabled ? "email-send-blockers" : undefined}
+        />
+        I reviewed the recipient, subject and full message above, including the
         sender and postal address. I approve sending this exact email now.
       </label>
       <Feedback state={state} />

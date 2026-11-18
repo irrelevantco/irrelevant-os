@@ -27,7 +27,7 @@ test("CSV preview, mapping, import, research approval and draft preparation", as
     page.getByRole("heading", { name: "Make the next move." }),
   ).toBeVisible();
   await page.getByRole("link", { name: "Imports", exact: true }).click();
-  const csv = `Company,City,Sector,URL,Phone,Priority,Hypothesis\n${name},Erie PA,Cleaning,https://${run}.example.test,814-555-0100,A,Unverified synthetic research question\n${name.toUpperCase()},erie pa,Cleaning,https://www.${run}.example.test/path,,A,Duplicate synthetic row\nX,Erie PA,Cleaning,javascript:alert(1),,B,Invalid synthetic row\nSynthetic Other ${run},Warren PA,HVAC,,814-555-0101,C,Another unverified question`;
+  const csv = `Company,City,Sector,URL,Phone,Priority,Hypothesis,Email\n${name},Erie PA,Cleaning,https://${run}.example.test,814-555-0100,A,Unverified synthetic research question,public@${run}.example.test\n${name.toUpperCase()},erie pa,Cleaning,https://www.${run}.example.test/path,,A,Duplicate synthetic row,public@${run}.example.test\nX,Erie PA,Cleaning,javascript:alert(1),,B,Invalid synthetic row,\nSynthetic Other ${run},Warren PA,HVAC,,814-555-0101,C,Another unverified question,`;
   await page.getByLabel("CSV file").setInputFiles({
     name: "synthetic-batch.csv",
     mimeType: "text/csv",
@@ -43,6 +43,7 @@ test("CSV preview, mapping, import, research approval and draft preparation", as
     industry: "Sector",
     website: "URL",
     public_phone: "Phone",
+    contact_email: "Email",
     research_priority: "Priority",
     audit_hypothesis_not_verified: "Hypothesis",
   }))
@@ -222,6 +223,34 @@ test("CSV preview, mapping, import, research approval and draft preparation", as
   await expect(
     page.getByLabel("Personalized email draft", { exact: true }),
   ).toHaveValue(/123 Synthetic Test Street/);
+  const blockers = page.locator("#email-send-blockers");
+  await expect(
+    blockers.getByRole("heading", { name: "Why email approval is locked" }),
+  ).toBeVisible();
+  await expect(blockers).toContainText(
+    "Google is not connected for this CRM account and workspace",
+  );
+  await expect(blockers).toContainText("Agents are paused");
+  await expect(blockers).toContainText(
+    "The saved sender email must be contact.irrelevantcollective@gmail.com",
+  );
+  await expect(
+    blockers.getByRole("link", { name: "Connect Google", exact: true }),
+  ).toHaveAttribute("href", "/dashboard/connections");
+  const approval = page.getByRole("checkbox", {
+    name: /I reviewed the recipient, subject and full message/,
+  });
+  await expect(approval).toBeDisabled();
+  await expect(approval).toHaveAttribute(
+    "aria-describedby",
+    "email-send-blockers",
+  );
+  await expect(
+    page.getByRole("button", {
+      name: "Approve and send this email",
+      exact: true,
+    }),
+  ).toBeDisabled();
   await page.getByRole("link", { name: "Edit review", exact: true }).click();
   await page
     .getByLabel("Digital Presence recommendation", { exact: true })

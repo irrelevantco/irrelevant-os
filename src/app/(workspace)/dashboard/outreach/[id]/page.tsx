@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import { SendEmailForm } from "@/components/acquisition/forms";
 import { messageBody } from "@/lib/acquisition/contracts";
 import { connection } from "@/lib/acquisition/google";
+import { sendBlockers } from "@/lib/acquisition/send-readiness";
+import { acquisitionSchema } from "@/lib/acquisition/state";
 import Link from "next/link";
 import { requireContext } from "@/lib/context";
 import { researchLead, growthReview } from "@/lib/research-data";
@@ -53,6 +55,10 @@ export default async function Preparation({
     db.rpc("acquisition_state", { org: organization.id }),
   ]);
   if (missingDatabaseMigration(controls.error)) return <DatabaseUpdate />;
+  if (settings.error || controls.error)
+    throw new Error(
+      "Could not load sending controls. No sending approval is available.",
+    );
   const google =
     role === "owner" ? await connection(db, organization.id) : null;
   let approvedBody = "";
@@ -63,19 +69,26 @@ export default async function Preparation({
       settings.data?.postal_address ?? "",
     );
   } catch {}
-  const sendingSettings = controls.data as {
-    settings?: { sending_enabled?: boolean };
-  } | null;
-  const canSend = Boolean(
-    google &&
-    sendingSettings?.settings?.sending_enabled &&
-    !settings.data?.paused &&
-    review.approved_at &&
-    approvedBody &&
-    lead.business.email &&
-    settings.data?.sender_email.toLowerCase() ===
-      "contact.irrelevantcollective@gmail.com",
+  const sendingSettings = acquisitionSchema.parse(controls.data);
+  const blockers = sendBlockers(
+    {
+      googleConnected: Boolean(google),
+      gmailSendGranted: Boolean(
+        google?.scopes.includes("https://www.googleapis.com/auth/gmail.send"),
+      ),
+      sendingEnabled: sendingSettings.settings?.sending_enabled ?? false,
+      agentsPaused: settings.data?.paused ?? true,
+      reviewApproved: Boolean(review.approved_at),
+      savedDraft: result.data.email_draft,
+      recipient: lead.business.email,
+      senderName: settings.data?.sender_name ?? "",
+      senderEmail: settings.data?.sender_email ?? "",
+      postalAddress: settings.data?.postal_address ?? "",
+      leadStatus: lead.status,
+    },
+    id,
   );
+  const canSend = blockers.length === 0;
   const draft = result.data.email_draft
     ? result.data
     : {
@@ -101,7 +114,7 @@ export default async function Preparation({
         action={<StatusBadge status={lead.status} />}
       />
       <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
-        <Card className="min-w-0 p-5 sm:p-7">
+        <Card id="outreach-draft" className="min-w-0 p-5 sm:p-7">
           <div className="mb-6">
             <Badge>Draft status enforced</Badge>
           </div>
@@ -116,6 +129,38 @@ export default async function Preparation({
                 sourced review are required. Maximum five attempts per day.
                 Replies and opt-outs currently need manual logging.
               </p>
+              {blockers.length > 0 ? (
+                <div
+                  id="email-send-blockers"
+                  className="space-y-3 rounded border border-primary/30 p-4"
+                >
+                  <h3 className="text-sm font-medium">
+                    Why email approval is locked
+                  </h3>
+                  <ul className="list-disc space-y-3 pl-5 text-xs leading-6">
+                    {blockers.map((blocker) => (
+                      <li key={blocker.code} className="break-words">
+                        {blocker.message}{" "}
+                        <Link
+                          href={blocker.href}
+                          className="text-primary underline"
+                        >
+                          {blocker.action}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-xs text-muted-foreground">
+                    After saving changes, return here and reload. The approval
+                    checkbox unlocks when every item above is complete.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs text-primary">
+                  Ready for your exact-message approval. Sending will recheck
+                  the current review, suppression list and daily limit.
+                </p>
+              )}
               {approvedBody && lead.business.email ? (
                 <SendEmailForm
                   leadId={id}

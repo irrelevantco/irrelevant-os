@@ -27,6 +27,12 @@ Configure sender name, the exact company sender email and a real business postal
 
 The server checks owner identity, Google scope, suppression, pause state, saved draft/review revision, recipient, full body and daily quota again. Five attempts/day/organization is the fixed personal-preview limit, including uncertain attempts. Duplicate fingerprints/request keys cannot send twice. A confirmed Gmail message ID creates actual outbound contact; creating a draft or approving a proposal does not. An uncertain HTTP/DB result is never automatically retried. Check Gmail and recorded delivery history before any further action.
 
+### Approval checkbox is disabled
+
+Version 0.3.1 adds **Why email approval is locked** above the approval form. Each unmet page requirement includes its own remedy link: Google connection/sending scope, enabled sending controls, resumed agents, saved sender name/email/postal address, saved draft, valid business email, approved current Growth Review and an open lead status. Save the relevant changes, return to the draft and reload. Checkbox state alone is not authorization; the server still enforces current suppression, revisions, identity and the daily limit.
+
+Google consent must be completed while signed into the same CRM account and organization as the Windows app. A connection saved under another account/workspace cannot unlock this one. The native app and system browser have separate CRM cookie sessions even on the same PC. No source-backed observation should be marked verified just to unlock a test send.
+
 Replies and opt-outs currently require manual logging in the CRM before further outreach. This app has no mailbox-reading grant. Hourly discovery does not send messages or automatically accept draft proposals.
 
 ## Agreed calls and meetings

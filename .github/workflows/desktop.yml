@@ -29,7 +29,7 @@ jobs:
         run: node --import tsx scripts/verify-free-discovery.ts
       - uses: actions/upload-artifact@v4
         with:
-          name: iRRELEVANT-OS-Windows-x64-v0.3.0
+          name: iRRELEVANT-OS-Windows-x64-v0.3.1
           path: |
             work/desktop-release/*.zip
             work/desktop-release/*.sha256
@@ -60,4 +60,4 @@ jobs:
         run: |
           $archive = Get-ChildItem 'work/desktop-release/*.zip' | Select-Object -First 1
           $checksum = Get-ChildItem 'work/desktop-release/*.sha256' | Select-Object -First 1
-          gh release create v0.3.0-personal-preview $archive.FullName $checksum.FullName --target $env:GITHUB_SHA --prerelease --title 'iRRELEVANT OS — Controlled Acquisition + Appointments' --notes-file docs/PERSONAL_RELEASE_NOTES.md
+          gh release create v0.3.1-personal-preview $archive.FullName $checksum.FullName --target $env:GITHUB_SHA --prerelease --title 'iRRELEVANT OS — Clear Email Approval Requirements' --notes-file docs/PERSONAL_RELEASE_NOTES.md

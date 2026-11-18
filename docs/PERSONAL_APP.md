@@ -6,7 +6,7 @@ This remains a database-backed application. It does not bundle your database, ac
 
 ## Windows
 
-Version 0.3.0 includes the local database updater, free preparation resume, OpenStreetMap discovery and XLSX/CSV conversion. If Outreach drafts or Agent control reports a missing database update, choose **Workspace → Update local database…** in the app, confirm, then reload. This applies only missing additive migrations to the supported existing local Docker stack; it does not reset or seed your database. No terminal, source checkout, Node installation or environment file copying is required for that repair.
+Version 0.3.1 includes the local database updater, free preparation resume, OpenStreetMap discovery and XLSX/CSV conversion. If Outreach drafts or Agent control reports a missing database update, choose **Workspace → Update local database…** in the app, confirm, then reload. This applies only missing additive migrations to the supported existing local Docker stack; it does not reset or seed your database. No terminal, source checkout, Node installation or environment file copying is required for that repair.
 
 1. Download the Windows x64 ZIP and extract the **entire folder**. Keep all files together. Windows 10/11 x64 are the target; ARM Windows and macOS builds are not supplied.
 2. Open **iRRELEVANT OS.exe** inside the extracted folder. This is a portable personal preview, not a signed installer or an automatically updating app.
@@ -22,7 +22,7 @@ Connection settings are saved in Electron's per-user application-data directory.
 
 The package is not signed with an iRRELEVANT CO Windows code-signing certificate. Windows may flag an unfamiliar application. Verify the supplied SHA-256 checksum and source before deciding whether to run it. Do not treat this preview as a security-audited production release. No silent updater is installed; download a new reviewed version for updates, including Electron security fixes.
 
-The neon iR icon is embedded in the Windows executable and used for the window/PWA. Close the old app and launch the executable from the newly extracted v0.3.0 folder. If a taskbar shortcut still shows the Atom icon, unpin the old shortcut and pin the new executable; the old pinned path does not update itself. Check **Workspace → About** or the sidebar for version 0.3.0.
+The neon iR icon is embedded in the Windows executable and used for the window/PWA. Close the old app and launch the executable from the newly extracted v0.3.1 folder. If a taskbar shortcut still shows the Atom icon, unpin the old shortcut and pin the new executable; the old pinned path does not update itself. Check **Workspace → About** or the sidebar for version 0.3.1.
 
 ## Phone
 

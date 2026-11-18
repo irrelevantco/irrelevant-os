@@ -71,7 +71,7 @@ export async function discoverOpenStreetMap(
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
       "User-Agent":
-        "iRRELEVANT-OS/0.3.0 (+https://github.com/irrelevantco/irrelevant-os)",
+        "iRRELEVANT-OS/0.3.1 (+https://github.com/irrelevantco/irrelevant-os)",
     },
     body: new URLSearchParams({
       data: buildOverpassQuery(query, seenSources.length ? 50 : query.count),
