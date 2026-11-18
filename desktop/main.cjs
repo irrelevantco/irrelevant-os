@@ -15,6 +15,8 @@ const net = require("node:net");
 const { validateConfig, importEnvironment } = require("./config.cjs");
 const { installedClient } = require("./google-setup.cjs");
 const { upgradeLocal, validateLocalTarget } = require("./local-upgrade.cjs");
+const { createAppUpdater } = require("./app-updater.cjs");
+let appUpdater, updateTimer, firstUpdateTimer;
 let automationTimer,
   automationBusy = false,
   activeOrigin;
@@ -321,6 +323,8 @@ if (!app.requestSingleInstanceLock()) {
   });
   app.on("before-quit", () => {
     quitting = true;
+    clearInterval(updateTimer);
+    clearTimeout(firstUpdateTimer);
     stopServer();
   });
   app.on("window-all-closed", () => {
@@ -336,11 +340,49 @@ if (!app.requestSingleInstanceLock()) {
         .setPermissionRequestHandler((_contents, _permission, callback) =>
           callback(false),
         );
+      if (
+        process.platform === "win32" &&
+        require("node:fs").existsSync(
+          path.join(process.resourcesPath, "app-update.yml"),
+        )
+      ) {
+        appUpdater = createAppUpdater({
+          updater: require("electron-updater").autoUpdater,
+          version: app.getVersion(),
+          showDialog: (options) =>
+            quitting || !windowRef || windowRef.isDestroyed()
+              ? Promise.resolve({ response: 1 })
+              : dialog.showMessageBox(windowRef, options),
+          canRestart: () => !automationBusy && !connecting && !upgrading,
+        });
+        if (!process.env.IRRELEVANT_DESKTOP_PROFILE) {
+          firstUpdateTimer = setTimeout(() => appUpdater.check(), 15000);
+          updateTimer = setInterval(
+            () => appUpdater.check(),
+            6 * 60 * 60 * 1000,
+          );
+          firstUpdateTimer.unref();
+          updateTimer.unref();
+        }
+      }
       Menu.setApplicationMenu(
         Menu.buildFromTemplate([
           {
             label: "Workspace",
             submenu: [
+              {
+                label: "Check for app updates…",
+                click: () =>
+                  appUpdater
+                    ? appUpdater.check(true)
+                    : dialog.showMessageBox(windowRef, {
+                        type: "info",
+                        message:
+                          "Install the Windows Setup edition to enable app updates.",
+                        detail:
+                          "Portable ZIP builds retain manual updates. Download the Setup edition from the official irrelevantco/irrelevant-os GitHub release. Your existing workspace data stays separate.",
+                      }),
+              },
               { label: "Change connection…", click: () => showSetup() },
               {
                 label: "Update local database…",

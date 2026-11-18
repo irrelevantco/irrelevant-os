@@ -1,63 +1,106 @@
 name: Personal Windows application
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: [Acquisition CRM checks]
+    types: [completed]
+    branches: [main]
 permissions:
   contents: write
   actions: read
+concurrency:
+  group: personal-windows-release
+  cancel-in-progress: false
 jobs:
   windows-package:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
+    env:
+      APP_SOURCE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ env.APP_SOURCE_SHA }}
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
-      - run: npm.cmd ci
-      - run: npm.cmd run build
+      - name: Prepare monotonic release version for the checked main commit
+        id: prepare
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/prepare-desktop-release.mjs
+      - if: steps.prepare.outputs.skip != 'true'
+        run: npm.cmd ci
+      - if: steps.prepare.outputs.skip != 'true'
+        run: npm.cmd --prefix desktop ci --omit=dev
+      - if: steps.prepare.outputs.skip != 'true'
+        run: npm.cmd run build
       - name: Package pinned Electron and standalone application
+        if: steps.prepare.outputs.skip != 'true'
         run: python scripts/package-desktop.py --platform win32
+      - name: Build native NSIS installer and update metadata
+        if: steps.prepare.outputs.skip != 'true'
+        run: node scripts/build-windows-installer.mjs
       - name: Verify native Windows desktop startup
+        if: steps.prepare.outputs.skip != 'true'
         shell: pwsh
         run: |
           $env:DESKTOP_EXECUTABLE = Join-Path $env:GITHUB_WORKSPACE 'work\desktop-release\iRRELEVANT-OS-win32-x64\iRRELEVANT OS.exe'
           node tests/desktop/smoke.mjs
+      - name: Verify installed application and update cycle
+        if: steps.prepare.outputs.skip != 'true'
+        run: node tests/desktop/installer.mjs
       - name: Check free provider connectivity (one bounded lookup, no import)
+        if: steps.prepare.outputs.skip != 'true'
         run: node --import tsx scripts/verify-free-discovery.ts
       - uses: actions/upload-artifact@v4
+        if: steps.prepare.outputs.skip != 'true'
         with:
-          name: iRRELEVANT-OS-Windows-x64-v0.3.1
+          name: iRRELEVANT-OS-Windows-x64-v${{ env.APP_RELEASE_VERSION }}
           path: |
             work/desktop-release/*.zip
             work/desktop-release/*.sha256
+            work/windows-installer/*.exe
+            work/windows-installer/*.sha256
+            work/windows-installer/*.blockmap
+            work/windows-installer/latest.yml
             work/free-discovery-check.json
           retention-days: 3
       - name: Require CRM checks for this exact commit
+        if: steps.prepare.outputs.skip != 'true'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           $verified = $false
           for ($attempt = 0; $attempt -lt 40; $attempt++) {
-            $runs = gh run list --workflow ci.yml --commit $env:GITHUB_SHA --limit 1 --json status,conclusion | ConvertFrom-Json
+            $runs = gh run list --workflow ci.yml --commit $env:APP_SOURCE_SHA --limit 1 --json status,conclusion | ConvertFrom-Json
             if ($LASTEXITCODE -ne 0) { throw 'Could not verify repository checks.' }
             if ($runs.Count -gt 0 -and $runs[0].status -eq 'completed') {
               if ($runs[0].conclusion -ne 'success') { throw 'CRM checks did not pass for this commit.' }
               $verified = $true
               break
             }
-            Write-Host 'Waiting for CRM checks on this commit...'
             Start-Sleep -Seconds 15
           }
           if (-not $verified) { throw 'CRM checks did not complete within the release window.' }
-      - name: Publish the verified personal preview download
+      - name: Publish verified installer, portable fallback and update feed
+        if: steps.prepare.outputs.skip != 'true'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $archive = Get-ChildItem 'work/desktop-release/*.zip' | Select-Object -First 1
-          $checksum = Get-ChildItem 'work/desktop-release/*.sha256' | Select-Object -First 1
-          gh release create v0.3.1-personal-preview $archive.FullName $checksum.FullName --target $env:GITHUB_SHA --prerelease --title 'iRRELEVANT OS — Repair Exact Email Approval' --notes-file docs/PERSONAL_RELEASE_NOTES.md
+          $head = gh api repos/irrelevantco/irrelevant-os/git/ref/heads/main --jq '.object.sha'
+          if ($LASTEXITCODE -ne 0) { throw 'Could not verify current main commit.' }
+          if ($head -ne $env:APP_SOURCE_SHA) { Write-Host 'Newer changes are being checked; this superseded build will not publish.'; exit 0 }
+          $assets = @()
+          $assets += (Get-ChildItem 'work/desktop-release/*.zip','work/desktop-release/*.sha256').FullName
+          $assets += (Get-ChildItem 'work/windows-installer/*.exe','work/windows-installer/*.sha256','work/windows-installer/*.blockmap','work/windows-installer/latest.yml').FullName
+          gh release create "v${env:APP_RELEASE_VERSION}-personal-preview" @assets --target $env:APP_SOURCE_SHA --prerelease --title "iRRELEVANT OS $env:APP_RELEASE_VERSION — Personal application" --notes-file work/desktop-release-notes.md
+          if ($LASTEXITCODE -ne 0) { throw 'Release publication failed.' }

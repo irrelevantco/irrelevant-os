@@ -1,3 +1,13 @@
+# Windows application and updates
+
+Install the **iRRELEVANT-OS-Setup-VERSION.exe** asset from the official GitHub personal-preview release to enable in-app updates. Close the old portable app first. Install for your current Windows account and launch iRRELEVANT OS from the Start menu. Existing connection and encrypted Google setup use the same application profile; your database remains in its existing Docker/Supabase storage.
+
+**Workspace → Check for app updates…** checks on demand. The installed edition also checks 15 seconds after startup and every six hours while open. Checking does not download or install. Choose **Download update**, then finish pending sends/save edits and choose **Install and restart**. Deferring installation never installs on quit. SHA-512 metadata verification is handled by electron-updater; the release also includes independent SHA-256 files. Personal previews are unsigned: this is publisher-controlled GitHub distribution, not an Authenticode-signed release. Code signing remains future work and no certificate was purchased.
+
+Portable ZIP builds remain available as a manual fallback. They cannot update themselves into an installed application; use Setup once. App updates do not reset accounts, overwrite private OAuth setup or automatically apply database migrations. If a later version needs a database update, use **Workspace → Update local database…** explicitly.
+
+After a successful push to main, GitHub CI checks that commit. A trusted-main-only workflow builds and tests the Windows app/installer, assigns the next version automatically, and publishes the installer, portable fallback and latest.yml feed. Duplicate or superseded source releases are skipped. This publishes desktop artifacts only; website deployment, billing and external communications remain separate.
+
 # iRRELEVANT OS personal application
 
 The Windows package opens the existing Next.js CRM in its own Electron window. The bundled application server starts and stops with the program on a private, automatically selected loopback port. You do not install Node, run npm, open a terminal, or type localhost:3030 to launch it.

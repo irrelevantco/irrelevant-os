@@ -77,6 +77,12 @@ try {
   );
   if (!hasUpdater)
     throw new Error("Native local database updater menu is missing.");
+  const appUpdateMenu = await electronApp.evaluate(({ Menu }) =>
+    Menu.getApplicationMenu()
+      .items.find((item) => item.label === "Workspace")
+      .submenu.items.some((item) => item.label === "Check for app updates…"),
+  );
+  if (!appUpdateMenu) throw Error("Native application update menu is missing.");
   await expect(
     setup.getByRole("heading", { name: "Build your position." }),
   ).toBeVisible();

@@ -1,5 +1,5 @@
 """Package the current standalone Next build with a pinned, checksum-verified Electron runtime."""
-import argparse,hashlib,json,pathlib,shutil,urllib.request,zipfile,subprocess
+import argparse,hashlib,json,pathlib,shutil,urllib.request,zipfile,subprocess,os
 root=pathlib.Path(__file__).resolve().parent.parent
 parser=argparse.ArgumentParser();parser.add_argument('--platform',choices=['win32','linux'],default='win32');parser.add_argument('--output',default='work/desktop-release');args=parser.parse_args()
 app_version=json.loads((root/'desktop'/'package.json').read_text())['version']
@@ -29,6 +29,9 @@ app=app_dir/'resources'/'app';app.mkdir()
 shutil.copytree(root/'supabase'/'migrations',app/'migrations')
 for file in (root/'desktop').iterdir():
  if file.is_file():shutil.copy2(file,app/file.name)
+updater_modules=root/'desktop'/'node_modules'
+if not (updater_modules/'electron-updater'/'package.json').exists():raise SystemExit('Run npm --prefix desktop ci --omit=dev before packaging.')
+shutil.copytree(updater_modules,app/'node_modules')
 def ignore(_directory,names):return [n for n in names if n.startswith('.env') or n in ['work','.git'] or n.endswith('.tsbuildinfo')]
 shutil.copytree(standalone,app/'web',ignore=ignore)
 shutil.copytree(root/'.next'/'static',app/'web'/'.next'/'static',dirs_exist_ok=True)
@@ -40,7 +43,7 @@ readme=root/'docs'/'PERSONAL_APP.md'
 if readme.exists():shutil.copy2(readme,app_dir/'START-HERE.md')
 for file in app.rglob('*'):
  if file.is_file() and (file.name.startswith('.env') or file.name in ['hosts.yml','local-owner.json','stack.env']):raise SystemExit('Private environment file in package; refusing delivery.')
-manifest={'app_version':app_version,'electron_version':version,'runtime_sha256':actual,'platform':args.platform,'architecture':'x64','backend_credentials_included':False}
+manifest={'app_version':app_version,'electron_version':version,'runtime_sha256':actual,'platform':args.platform,'architecture':'x64','backend_credentials_included':False,'source_commit':os.environ.get('APP_SOURCE_SHA')}
 (app_dir/'BUILD-INFO.json').write_text(json.dumps(manifest,indent=2)+'\n')
 if args.platform=='win32':
  archive_path=pathlib.Path(shutil.make_archive(str(out/f'iRRELEVANT-OS-Windows-x64-v{app_version}'),'zip',out,app_dir.name))
