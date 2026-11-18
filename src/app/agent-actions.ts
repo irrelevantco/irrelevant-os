@@ -1,8 +1,8 @@
 "use server";
+import { stageDiscovery } from "@/lib/agents/import-preview";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { createHash } from "node:crypto";
 import { requireContext } from "@/lib/context";
 import type { ActionState } from "@/lib/domain";
 import type { Json } from "@/lib/supabase/database.types";
@@ -18,8 +18,6 @@ import {
 } from "@/lib/agents/discovery-options";
 import { missingDatabaseMigration } from "@/lib/database-failure";
 import { runNext } from "@/lib/agents/worker";
-import { candidatesCsv } from "@/lib/agents/explee";
-import { autoMapping, parseCsv, previewRows } from "@/lib/imports/csv";
 function changed() {
   revalidatePath("/dashboard", "layout");
 }
@@ -218,23 +216,22 @@ export async function previewDiscovery(
     (data.input as { provider?: string })?.provider === "osm"
       ? "osm"
       : "explee";
-  const csv = candidatesCsv(result.data.companies);
-  const rows = parseCsv(csv);
-  const mapping = autoMapping(rows.headers);
-  const { data: batch, error } = await db.rpc("preview_prospect_import", {
-    org: organization.id,
-    batch_label:
-      provider === "osm"
-        ? "OpenStreetMap discovery candidates"
-        : "Explee discovery candidates",
-    file_name: `${provider}-${job.data}.csv`,
-    file_fingerprint: createHash("sha256")
-      .update(`${provider}-v1:${job.data}`)
-      .digest("hex"),
-    field_mapping: mapping,
-    rows: previewRows(rows.records, mapping) as unknown as Json,
-  });
-  if (error || !batch)
+  let batch: string | null;
+  try {
+    batch = await stageDiscovery(
+      db,
+      organization.id,
+      job.data,
+      provider,
+      result.data.companies,
+    );
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Could not stage candidates.",
+    };
+  }
+  if (!batch)
     return { error: "Could not preview candidates. No leads were imported." };
   redirect(`/dashboard/imports/${batch}`);
 }

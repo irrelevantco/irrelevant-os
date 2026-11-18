@@ -7,7 +7,7 @@ export const JOB_KINDS = [
 ] as const;
 export const settingsSchema = z.object({
   paused: z.boolean(),
-  daily_job_limit: z.coerce.number().int().min(1).max(25),
+  daily_job_limit: z.coerce.number().int().min(1).max(100),
   explee_daily_credit_limit: z.coerce.number().min(0).max(50),
   sender_name: z.string().trim().max(160),
   sender_email: z.union([z.email().max(254), z.literal("")]),

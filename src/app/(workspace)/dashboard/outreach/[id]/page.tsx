@@ -1,3 +1,7 @@
+import { randomUUID } from "node:crypto";
+import { SendEmailForm } from "@/components/acquisition/forms";
+import { messageBody } from "@/lib/acquisition/contracts";
+import { connection } from "@/lib/acquisition/google";
 import Link from "next/link";
 import { requireContext } from "@/lib/context";
 import { researchLead, growthReview } from "@/lib/research-data";
@@ -17,7 +21,7 @@ export default async function Preparation({
 }) {
   const { id } = await params;
   const lead = await researchLead(id);
-  const [{ review, points }, { db, organization }] = await Promise.all([
+  const [{ review, points }, { db, organization, role }] = await Promise.all([
     growthReview(id),
     requireContext(),
   ]);
@@ -40,6 +44,38 @@ export default async function Preparation({
     throw new Error(
       "Could not load contact history. Apply the agent migration.",
     );
+  const [settings, controls] = await Promise.all([
+    db
+      .from("agent_settings")
+      .select("*")
+      .eq("organization_id", organization.id)
+      .maybeSingle(),
+    db.rpc("acquisition_state", { org: organization.id }),
+  ]);
+  if (missingDatabaseMigration(controls.error)) return <DatabaseUpdate />;
+  const google =
+    role === "owner" ? await connection(db, organization.id) : null;
+  let approvedBody = "";
+  try {
+    approvedBody = messageBody(
+      result.data.email_draft,
+      settings.data?.sender_name ?? "",
+      settings.data?.postal_address ?? "",
+    );
+  } catch {}
+  const sendingSettings = controls.data as {
+    settings?: { sending_enabled?: boolean };
+  } | null;
+  const canSend = Boolean(
+    google &&
+    sendingSettings?.settings?.sending_enabled &&
+    !settings.data?.paused &&
+    review.approved_at &&
+    approvedBody &&
+    lead.business.email &&
+    settings.data?.sender_email.toLowerCase() ===
+      "contact.irrelevantcollective@gmail.com",
+  );
   const draft = result.data.email_draft
     ? result.data
     : {
@@ -59,9 +95,9 @@ export default async function Preparation({
         ← Outreach preparation
       </Link>
       <PageHeading
-        eyebrow="Draft / Never sent"
+        eyebrow="Outreach / Exact-message approval"
         title={lead.business.name}
-        description="Prepare an introduction grounded in what is known. No sending, mailbox, or call integration is connected."
+        description="Prepare an introduction grounded in recorded evidence. Saved drafts and approved delivery attempts are tracked separately."
         action={<StatusBadge status={lead.status} />}
       />
       <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
@@ -70,6 +106,39 @@ export default async function Preparation({
             <Badge>Draft status enforced</Badge>
           </div>
           <OutreachDraftForm draft={draft} followUp={lead.next_follow_up} />
+          {role === "owner" && (
+            <section className="mt-8 space-y-4 border-t border-border pt-6">
+              <h2 className="text-lg">Send a separately approved email</h2>
+              <p className="text-xs leading-6 text-muted-foreground">
+                Save your draft above first. This approval uses the saved
+                version shown below. Google sending permission, enabled
+                controls, sender identity, a public recipient and an approved
+                sourced review are required. Maximum five attempts per day.
+                Replies and opt-outs currently need manual logging.
+              </p>
+              {approvedBody && lead.business.email ? (
+                <SendEmailForm
+                  leadId={id}
+                  draftAt={result.data.updated_at}
+                  requestKey={randomUUID()}
+                  recipient={lead.business.email}
+                  body={approvedBody}
+                  enabled={canSend}
+                />
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Save a draft, public contact email and sender/postal details
+                  to prepare an approval.
+                </p>
+              )}
+              <Link
+                href="/dashboard/connections"
+                className="inline-block text-sm text-primary underline"
+              >
+                Google connection and delivery history
+              </Link>
+            </section>
+          )}
           <section className="mt-8 border-t border-border pt-6">
             <h2 className="mb-4 text-lg">Actual contact history</h2>
             <p className="mb-4 text-xs leading-6 text-muted-foreground">

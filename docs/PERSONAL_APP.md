@@ -6,7 +6,7 @@ This remains a database-backed application. It does not bundle your database, ac
 
 ## Windows
 
-Version 0.2.3 includes the local database updater, free preparation resume, OpenStreetMap discovery and XLSX/CSV conversion. If Outreach drafts or Agent control reports a missing database update, choose **Workspace → Update local database…** in the app, confirm, then reload. This applies only missing additive migrations to the supported existing local Docker stack; it does not reset or seed your database. No terminal, source checkout, Node installation or environment file copying is required for that repair.
+Version 0.3.0 includes the local database updater, free preparation resume, OpenStreetMap discovery and XLSX/CSV conversion. If Outreach drafts or Agent control reports a missing database update, choose **Workspace → Update local database…** in the app, confirm, then reload. This applies only missing additive migrations to the supported existing local Docker stack; it does not reset or seed your database. No terminal, source checkout, Node installation or environment file copying is required for that repair.
 
 1. Download the Windows x64 ZIP and extract the **entire folder**. Keep all files together. Windows 10/11 x64 are the target; ARM Windows and macOS builds are not supplied.
 2. Open **iRRELEVANT OS.exe** inside the extracted folder. This is a portable personal preview, not a signed installer or an automatically updating app.
@@ -22,7 +22,7 @@ Connection settings are saved in Electron's per-user application-data directory.
 
 The package is not signed with an iRRELEVANT CO Windows code-signing certificate. Windows may flag an unfamiliar application. Verify the supplied SHA-256 checksum and source before deciding whether to run it. Do not treat this preview as a security-audited production release. No silent updater is installed; download a new reviewed version for updates, including Electron security fixes.
 
-The neon iR icon is embedded in the Windows executable and used for the window/PWA. Close the old app and launch the executable from the newly extracted v0.2.3 folder. If a taskbar shortcut still shows the Atom icon, unpin the old shortcut and pin the new executable; the old pinned path does not update itself. Check **Workspace → About** or the sidebar for version 0.2.3.
+The neon iR icon is embedded in the Windows executable and used for the window/PWA. Close the old app and launch the executable from the newly extracted v0.3.0 folder. If a taskbar shortcut still shows the Atom icon, unpin the old shortcut and pin the new executable; the old pinned path does not update itself. Check **Workspace → About** or the sidebar for version 0.3.0.
 
 ## Phone
 
@@ -46,3 +46,8 @@ A free personal phone preview option is documented in `FREE_PHONE_PREVIEW.md`; i
 ## Build from source
 
 `npm ci`, `npm run build`, then `python scripts/package-desktop.py --platform win32`. The script downloads pinned Electron 45.3.4 from the official Electron GitHub release, verifies its SHA-256, includes the standalone app/static assets and rejects environment/credential files. For a Windows release, build on Windows so optional native dependencies match Windows. Linux packages exist only for automated smoke tests.
+
+
+## Acquisition controls
+
+After applying the local database update, open Connections to enable hourly targets. The PC must remain awake with the app open and an owner signed in. Use Calls & meetings only for an actual agreed time; the main opportunity metric counts each open lead estimate once. Google setup is separate: import an official Desktop OAuth client JSON from Google Cloud through the Workspace menu, then open the Google connection in your system browser. OS encryption is required. No Google credentials are included in the package. See GOOGLE_INTEGRATION.md and ACQUISITION_AUTOMATION.md.

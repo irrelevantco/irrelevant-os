@@ -54,3 +54,12 @@ Preparation claims and completion require an authenticated organization owner. N
 ## Spreadsheet conversion and free discovery
 
 See DATA_CONVERTER.md for file limits, ZIP/XML checks and the browser-only boundary. Non-prospect conversion never persists employee/payroll/applicant contents. No AI or external conversion service receives files. Prospect preview remains an authenticated owner action with a second import confirmation. Public OpenStreetMap lookup uses a fixed endpoint and validated city/trade filters, never an arbitrary URL or user-supplied query. Free discovery has database-enforced quotas independent of optional paid credits; provider failures are not retried automatically. Resume is owner-only and retains existing limits/identity.
+
+
+## Approved sales capabilities (0.3.0)
+
+Google refresh/access tokens are AES-256-GCM encrypted on the server with organization/owner/key-identifier context; private storage has no client SELECT grant. Desktop setup files are encrypted through the OS facility, with no plaintext fallback. The native runner uses the owner browser session and the authenticated same-origin tick endpoint, never service-role or anonymous execution. Public RPCs still validate owner and tenant.
+
+Email approval captures recipient, subject, full body/footer, draft edit time and review revision. Claim rechecks suppression, pause, Google scope, edits and a five-attempt daily quota. Uncertain sends remain non-retryable and do not create actual-contact history without confirmation. Calendar writes use deterministic IDs, availability checks and separate guest-invitation consent. Browser/provider sign-in and live writes remain unverified until the owner completes Google setup. Mailbox reading/reply detection is not implemented; log opt-outs before further sends.
+
+Post-upgrade hosted advisors report [authenticated security-definer RPC warnings](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable): these RPCs intentionally mediate narrowly scoped writes and check owner/member identity internally with fixed search paths. Anonymous grants are revoked. [RLS-without-policy notices](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy) cover the private credential store and preserved legacy tables; denial is intentional, so do not add broad read policies to clear the notice. Performance notices for older foreign-key indexes and legacy policies remain; this release is not a clean-advisor or production-security-audit claim.

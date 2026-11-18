@@ -2,9 +2,9 @@
 
 **Build your position.** A business-first client acquisition workspace for iRRELEVANT CO.
 
-A Next.js App Router acquisition CRM with Supabase authentication, organization-level RLS, businesses, leads, notes, pipeline, and Prospect Batch 001 import/research. CSV preview/mapping, deduplication, editable three-point reviews, owner approval gates and draft-only outreach preparation are implemented. Controlled preparation agents, bounded free OpenStreetMap discovery, optional Explee discovery, and a browser-local XLSX/CSV converter are implemented. Email sending, payments, LLM research and public publishing are not enabled.
+A Next.js App Router acquisition CRM with Supabase authentication, organization-level RLS, businesses, leads, notes, pipeline, and Prospect Batch 001 import/research. CSV preview/mapping, deduplication, editable three-point reviews, owner approval gates and draft-only outreach preparation are implemented. Controlled preparation agents, bounded free OpenStreetMap discovery, optional Explee discovery, and a browser-local XLSX/CSV converter are implemented. Opt-in hourly discovery, agreed appointments and ten-second dashboard refresh are implemented. Gmail/Calendar adapters require your own OAuth setup and exact-action approval; no live connection is activated. Payments, LLM research and unattended hosted scheduling remain unimplemented.
 
-For the personal Windows application and phone setup, see `docs/PERSONAL_APP.md`. For the preparation queue, see `docs/AGENT_CONTROL.md`. Spreadsheet templates and their limits are documented in `docs/DATA_CONVERTER.md`; the proposed company-template product direction is in `docs/COMPANY_WORKSPACES.md`.
+For the personal Windows application and phone setup, see `docs/PERSONAL_APP.md`. For the preparation queue, see `docs/AGENT_CONTROL.md`. Hourly targets, runner availability and opportunity-value definitions are in `docs/ACQUISITION_AUTOMATION.md`. Spreadsheet templates and their limits are documented in `docs/DATA_CONVERTER.md`; the proposed company-template product direction is in `docs/COMPANY_WORKSPACES.md`.
 
 ## Requirements
 
@@ -77,6 +77,7 @@ npm run build
 npm run test:rls
 npm run test:imports
 npm run test:agents
+npm run test:acquisition
 npm run test:e2e
 ```
 

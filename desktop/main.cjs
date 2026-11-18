@@ -6,13 +6,18 @@ const {
   ipcMain,
   shell,
   session,
+  safeStorage,
 } = require("electron");
 const { spawn } = require("node:child_process");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const net = require("node:net");
 const { validateConfig, importEnvironment } = require("./config.cjs");
+const { installedClient } = require("./google-setup.cjs");
 const { upgradeLocal, validateLocalTarget } = require("./local-upgrade.cjs");
+let automationTimer,
+  automationBusy = false,
+  activeOrigin;
 let activeConfig,
   upgrading = false;
 let windowRef,
@@ -26,6 +31,8 @@ function connectionFile() {
   return path.join(app.getPath("userData"), "connection.json");
 }
 function stopServer() {
+  clearInterval(automationTimer);
+  activeOrigin = undefined;
   if (child) {
     child.kill();
     child = null;
@@ -88,6 +95,89 @@ async function showSetup() {
   old?.close();
   connecting = false;
 }
+async function googleSetup() {
+  try {
+    const value = await fs.readFile(
+      path.join(app.getPath("userData"), "google-setup.bin"),
+    );
+    if (!safeStorage.isEncryptionAvailable())
+      throw Error("OS credential encryption is unavailable");
+    return JSON.parse(safeStorage.decryptString(value));
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw Error(
+      "Google setup could not be decrypted for this Windows account. Re-import the OAuth setup. Your CRM connection is unchanged.",
+    );
+  }
+}
+async function importGoogleSetup() {
+  try {
+    if (activeConfig?.mode !== "bundled")
+      throw Error(
+        "For a hosted app, configure Google OAuth on the host. Local OAuth setup is only for the bundled desktop server.",
+      );
+    if (!safeStorage.isEncryptionAvailable())
+      throw Error(
+        "Windows credential encryption must be available. No unencrypted secret will be saved.",
+      );
+    const result = await dialog.showOpenDialog(windowRef, {
+      title: "Choose Google Desktop OAuth client JSON",
+      properties: ["openFile"],
+      filters: [{ name: "Google OAuth JSON", extensions: ["json"] }],
+    });
+    if (result.canceled) return;
+    const file = await fs.readFile(result.filePaths[0], "utf8");
+    if (file.length > 20000) throw Error("OAuth setup file is too large.");
+    const prior = await googleSetup().catch(() => null);
+    const setup = installedClient(file, prior?.encryptionKey);
+    await fs.writeFile(
+      path.join(app.getPath("userData"), "google-setup.bin"),
+      safeStorage.encryptString(JSON.stringify(setup)),
+    );
+    if (activeConfig?.mode === "bundled") {
+      const config = activeConfig;
+      stopServer();
+      await openWorkspace(config);
+    }
+    await dialog.showMessageBox(windowRef, {
+      type: "info",
+      message: "Google setup saved with OS encryption.",
+      detail:
+        "Use Workspace → Open Google connection in browser… and sign in to your CRM in that browser to complete Google's consent flow.",
+    });
+  } catch (error) {
+    await dialog.showMessageBox(windowRef, {
+      type: "error",
+      message: "Google setup was not imported.",
+      detail: error.message,
+    });
+  }
+}
+function startAutomation(origin) {
+  clearInterval(automationTimer);
+  activeOrigin = origin;
+  async function tick() {
+    if (automationBusy || !activeOrigin || quitting) return;
+    automationBusy = true;
+    try {
+      if (
+        !windowRef ||
+        new URL(windowRef.webContents.getURL()).origin !== activeOrigin
+      )
+        return;
+      // Execute one constant, same-origin request in the authenticated app context.
+      // Chromium supplies the Origin and HttpOnly session cookies; CSRF protection stays strict.
+      await windowRef.webContents.executeJavaScript(
+        'fetch("/api/automation/tick", { method: "POST", credentials: "same-origin", cache: "no-store" }).then(response => response.text())',
+      );
+    } catch {
+    } finally {
+      automationBusy = false;
+    }
+  }
+  automationTimer = setInterval(tick, 60000);
+  void tick();
+}
 async function openWorkspace(config) {
   const validated = validateConfig(config);
   activeConfig = validated;
@@ -101,6 +191,7 @@ async function openWorkspace(config) {
       throw new Error(
         "Supabase is not responding. For your local workspace, start Docker Desktop and the existing iRRELEVANT Supabase containers, then try again.",
       );
+    const google = await googleSetup().catch(() => null);
     const port = await freePort();
     origin = `http://127.0.0.1:${port}`;
     // Embedded Electron Node runtime: no system Node/npm and no port 3030 dependency.
@@ -115,6 +206,11 @@ async function openWorkspace(config) {
         PORT: String(port),
         HOSTNAME: "127.0.0.1",
         APP_URL: origin,
+        IRRELEVANT_DESKTOP: "true",
+        GOOGLE_CLIENT_ID: google?.clientId || "",
+        GOOGLE_CLIENT_SECRET: google?.clientSecret || "",
+        GOOGLE_REDIRECT_URI: `${origin}/api/integrations/google/callback`,
+        OAUTH_TOKEN_ENCRYPTION_KEY: google?.encryptionKey || "",
         SUPABASE_URL: validated.supabaseUrl,
         SUPABASE_PUBLISHABLE_KEY: validated.publishableKey,
         OPERATOR_EMAIL_ALLOWLIST: validated.operatorEmail,
@@ -165,6 +261,7 @@ async function openWorkspace(config) {
     }
   });
   await next.loadURL(`${origin}/dashboard`);
+  startAutomation(origin);
   old?.close();
   connecting = false;
   return validated;
@@ -248,6 +345,17 @@ if (!app.requestSingleInstanceLock()) {
               {
                 label: "Update local database…",
                 click: () => updateLocalDatabase(),
+              },
+              {
+                label: "Import Google OAuth setup…",
+                click: () => importGoogleSetup(),
+              },
+              {
+                label: "Open Google connection in browser…",
+                click: () => {
+                  if (activeOrigin)
+                    shell.openExternal(`${activeOrigin}/dashboard/connections`);
+                },
               },
               { type: "separator" },
               {

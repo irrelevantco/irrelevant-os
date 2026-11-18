@@ -9,7 +9,7 @@ Read README.md and docs/ARCHITECTURE.md before changes. Current implementation i
 - Keep notes and audit logs append-only. Preserve original source provenance; use notes for corrections/evidence.
 - Never fabricate metrics, client revenue, testimonials, case studies, source facts, or audit observations. Explicitly distinguish estimates, observations, assumptions, and verified facts.
 - Never send outreach, create live charges, change billing, publish, deploy, or buy services without the user's explicit authorization. Later agents must require approved artifacts and bounded budgets.
-- Later Google OAuth tokens require authenticated encryption at rest; Phase 1 has no Google token storage.
+- Google tokens require authenticated encryption at rest and runtime/owner scoping. Current adapters require separate account setup; never represent disconnected integrations as live.
 - Later job handlers require bounded retries, idempotency, cancellation checks and spending/rate limits.
 - Keep changes accessible and responsive. Black/charcoal, off-white, restrained acid green; editorial headings and practical CRM tables.
 - After meaningful changes, run typecheck, lint, unit tests and build. Run local API/RLS and Playwright checks for data/auth flows. Never run fixture-creating tests against production.
@@ -17,7 +17,7 @@ Read README.md and docs/ARCHITECTURE.md before changes. Current implementation i
 
 Commands and setup are in README.md. `.env.local`, `work/`, `.next/`, and browser artifacts are intentionally untracked.
 
-- Read docs/PROSPECT_BATCH_001.md for import/research contracts. Never convert supplied hypotheses or issue columns into verified findings. Only explicit owner approval of a current sourced review may enable Ready for Outreach. All email records must remain draft-only.
+- Read docs/PROSPECT_BATCH_001.md for import/research contracts. Never convert supplied hypotheses or issue columns into verified findings. Only explicit owner approval of a current sourced review may enable Ready for Outreach. Preparation creates drafts only; sending requires separate approval of the exact current recipient and message through the bounded delivery workflow.
 - Preserve original migrations; add versioned migrations without resetting existing organizations or data. Local startup uses port 3030; Windows and cloud databases are distinct.
 
 - Read docs/AGENT_CONTROL.md and docs/PERSONAL_APP.md for preparation jobs, suppression, owner-only worker authorization and the portable Electron shell. Keep the renderer sandboxed with no Node integration. Never package .env files, local-owner credentials or service-role keys. Desktop setup accepts publishable/anon keys only. Git autodeployment is explicitly gated until commercial hosting is approved.

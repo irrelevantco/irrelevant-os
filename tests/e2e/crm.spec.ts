@@ -84,13 +84,11 @@ test("authentication, CRM, follow-ups, tenant switching and sign-out", async ({
     page
       .getByRole("heading", { name: "Follow-ups due" })
       .locator("..")
-      .locator("..")
       .getByText("1", { exact: true }),
   ).toBeVisible();
   await expect(
     page
       .getByRole("heading", { name: "Qualified & progressing" })
-      .locator("..")
       .locator("..")
       .getByText("1", { exact: true }),
   ).toBeVisible();

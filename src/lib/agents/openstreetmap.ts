@@ -11,11 +11,11 @@ const responseSchema = z.object({
         tags: z.record(z.string(), z.string()).default({}),
       }),
     )
-    .max(10),
+    .max(50),
 });
-export function buildOverpassQuery(input: unknown) {
+export function buildOverpassQuery(input: unknown, scanCount?: number) {
   const query = freeDiscoverySchema.parse(input);
-  return `[out:json][timeout:20][maxsize:33554432];\narea["ISO3166-2"=${JSON.stringify(`US-${query.state}`)}]->.state;\nrel(area.state)["boundary"="administrative"]["admin_level"="8"]["name"=${JSON.stringify(query.city)}];\nmap_to_area->.city;\nnwr(area.city)["craft"=${JSON.stringify(query.category)}]["name"];\nout tags ${query.count};`;
+  return `[out:json][timeout:20][maxsize:33554432];\narea["ISO3166-2"=${JSON.stringify(`US-${query.state}`)}]->.state;\nrel(area.state)["boundary"="administrative"]["admin_level"="8"]["name"=${JSON.stringify(query.city)}];\nmap_to_area->.city;\nnwr(area.city)["craft"=${JSON.stringify(query.category)}]["name"];\nout tags ${scanCount ?? query.count};`;
 }
 function publicWebsite(value: string | undefined) {
   if (!value) return "";
@@ -63,6 +63,7 @@ async function boundedJson(response: Response) {
 export async function discoverOpenStreetMap(
   input: unknown,
   transport: typeof fetch = fetch,
+  seenSources: readonly string[] = [],
 ) {
   const query = freeDiscoverySchema.parse(input);
   const response = await transport(OSM_ENDPOINT, {
@@ -70,9 +71,11 @@ export async function discoverOpenStreetMap(
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
       "User-Agent":
-        "iRRELEVANT-OS/0.2.3 (+https://github.com/irrelevantco/irrelevant-os)",
+        "iRRELEVANT-OS/0.3.0 (+https://github.com/irrelevantco/irrelevant-os)",
     },
-    body: new URLSearchParams({ data: buildOverpassQuery(query) }).toString(),
+    body: new URLSearchParams({
+      data: buildOverpassQuery(query, seenSources.length ? 50 : query.count),
+    }).toString(),
     redirect: "error",
     cache: "no-store",
     signal: AbortSignal.timeout(25000),
@@ -91,14 +94,20 @@ export async function discoverOpenStreetMap(
       "OpenStreetMap could not complete this search. No partial results were imported; try later or use CSV.",
     );
   const seen = new Set<string>();
+  const previous = new Set(seenSources);
   const companies = result.elements
-    .slice(0, query.count)
     .filter((element) => {
       const key = `${element.type}/${element.id}`;
-      if (seen.has(key) || !element.tags.name?.trim()) return false;
+      if (
+        seen.has(key) ||
+        previous.has(`https://www.openstreetmap.org/${key}`) ||
+        !element.tags.name?.trim()
+      )
+        return false;
       seen.add(key);
       return true;
     })
+    .slice(0, query.count)
     .map((element) => {
       const t = element.tags;
       const source = `https://www.openstreetmap.org/${element.type}/${element.id}`;
@@ -129,6 +138,6 @@ export async function discoverOpenStreetMap(
     observed_at: new Date().toISOString(),
     warning: companies.length
       ? "Public map listings are unverified candidates. Check current operation and public business contacts, then preview the import. Coverage varies; no audit finding, budget or decision-maker access is confirmed."
-      : "No matching mapped businesses were returned for this municipality and trade. Coverage is incomplete; this does not mean no businesses exist. Use your current prospect list, CSV import or a manual public-source search.",
+      : "No new matching mapped businesses were returned for this municipality and trade. Coverage is incomplete; this does not mean no businesses exist. Use your current prospect list, CSV import or a manual public-source search.",
   };
 }

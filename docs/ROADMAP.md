@@ -46,3 +46,8 @@ CSV upload/bundled load, mapping, Zod preview, row errors, normalized deduplicat
 ## Personal preview 0.2.2 and future company templates
 
 Implemented: explicit owner resume without changing paid limits, bounded free map discovery, true embedded neon Windows icon, and reviewed XLSX/CSV conversion/export for seven templates. Only the prospect template imports into the CRM. Workforce/payroll/scheduling/production operational modules, vendor connectors and PDF/DOCX resume extraction are not implemented. Next validate the acquisition pilot and an authorized migration sample, then choose one company-specific template. See COMPANY_WORKSPACES.md for acceptance gates and pricing hypotheses.
+
+
+## Acquisition preview 0.3.0
+
+Implemented locally: opt-in hourly category targets, native authenticated desktop heartbeat, automatic import previews, future agreed appointments with overlap/business-hour checks, unique-lead opportunity valuation and ten-second polling. Google OAuth/encryption/send/Calendar adapters and approval controls are implemented with synthetic provider tests; creating the real Google project/client, consent and live activation remain blocked on sign-in/setup. Phone hosting is pending the Render connection and hosted schema/account verification. Always-on hosted processing, automatic reply/opt-out synchronization and autonomous meeting negotiation are not included.

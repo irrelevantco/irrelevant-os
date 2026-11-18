@@ -1,7 +1,11 @@
+import { requireContext } from "@/lib/context";
+import { LiveMetrics } from "@/components/acquisition/live-metrics";
+import { DatabaseUpdate } from "@/components/database-update";
+import { missingDatabaseMigration } from "@/lib/database-failure";
+import { z } from "zod";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, CalendarDays, Plus } from "lucide-react";
 import { getLeads, getSummary } from "@/lib/data";
-import { money } from "@/lib/utils";
 import { STATUSES } from "@/lib/domain";
 import { PageHeading } from "@/components/page-heading";
 import { Button } from "@/components/ui/button";
@@ -20,32 +24,19 @@ export default async function Dashboard() {
     day: "numeric",
     timeZone: "America/New_York",
   }).format(new Date());
-  const metrics = [
-    {
-      label: "Businesses in pipeline",
-      value: summary.total.toLocaleString(),
-      hint: "Every opportunity, one place",
-      n: "01",
-    },
-    {
-      label: "Qualified & progressing",
-      value: summary.qualified.toLocaleString(),
-      hint: "Qualified through won",
-      n: "02",
-    },
-    {
-      label: "Open opportunity value",
-      value: money(summary.open_value_cents),
-      hint: "Manual estimates · not revenue",
-      n: "03",
-    },
-    {
-      label: "Follow-ups due",
-      value: summary.follow_ups_due.toLocaleString(),
-      hint: "Today and overdue · open leads",
-      n: "04",
-    },
-  ];
+  const { db, organization } = await requireContext();
+  const sales = await db.rpc("acquisition_state", {
+    org: organization.id,
+    payload: { metrics_only: true },
+  });
+  if (missingDatabaseMigration(sales.error)) return <DatabaseUpdate />;
+  if (sales.error) throw Error("Could not load appointment metrics.");
+  const salesMetrics = z
+    .object({
+      meeting_value_cents: z.number(),
+      meetings_without_estimate: z.number(),
+    })
+    .parse(sales.data);
   return (
     <>
       <PageHeading
@@ -61,30 +52,13 @@ export default async function Dashboard() {
           </Button>
         }
       />
-      <section
-        aria-label="Pipeline metrics"
-        className="mb-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
-      >
-        {metrics.map((m) => (
-          <Card key={m.n} className="relative overflow-hidden p-5">
-            <div className="mb-6 flex justify-between gap-2">
-              <h2 className="text-xs font-medium text-muted-foreground">
-                {m.label}
-              </h2>
-              <span className="text-[10px] text-muted-foreground/60">
-                /{m.n}
-              </span>
-            </div>
-            <p className="text-4xl font-normal tracking-[-.06em] tabular-nums">
-              {m.value}
-            </p>
-            <p className="mt-3 text-[10px] text-muted-foreground">{m.hint}</p>
-            {m.n === "04" && (
-              <div className="absolute bottom-0 left-0 h-0.5 w-full bg-primary/60" />
-            )}
-          </Card>
-        ))}
-      </section>
+      <LiveMetrics
+        initial={{
+          organization_id: organization.id,
+          crm: summary,
+          sales: salesMetrics,
+        }}
+      />
       <div className="mb-7 grid gap-5 xl:grid-cols-[1.7fr_1fr]">
         <Card>
           <div className="flex items-center justify-between border-b border-border px-5 py-5">

@@ -5,7 +5,7 @@ type InstallEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: string }>;
 };
-export function InstallApp() {
+export function InstallApp({ hostedUrl }: { hostedUrl: string | null }) {
   const [prompt, setPrompt] = useState<InstallEvent | null>(null);
   const [installed, setInstalled] = useState(false);
   const [notice, setNotice] = useState("");
@@ -39,11 +39,37 @@ export function InstallApp() {
   }
   return (
     <div className="space-y-4 text-sm leading-7">
-      <p>
-        Open your hosted HTTPS address on your phone and sign in with your
-        hosted account. Your PC can be turned off.
-      </p>
-      {prompt && <Button onClick={install}>Install iRRELEVANT OS</Button>}
+      {hostedUrl ? (
+        <p>
+          Open{" "}
+          <a href={hostedUrl} className="break-all text-primary underline">
+            {hostedUrl}
+          </a>{" "}
+          on your phone and sign in with the hosted account. Both devices must
+          use the same hosted database; local records do not transfer
+          automatically.
+        </p>
+      ) : (
+        <div>
+          <p className="font-medium">Phone hosting is not connected yet.</p>
+          <p className="mt-3">
+            This installation uses a local address or local database. Add to
+            Home Screen cannot make localhost reachable from your phone or keep
+            a local database available when the PC is off.
+          </p>
+          <a
+            href="https://github.com/irrelevantco/irrelevant-os/blob/main/docs/FREE_PHONE_PREVIEW.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-block text-primary underline"
+          >
+            Set up the free hosted phone preview
+          </a>
+        </div>
+      )}
+      {hostedUrl && prompt && (
+        <Button onClick={install}>Install iRRELEVANT OS</Button>
+      )}
       <p>
         <strong>iPhone:</strong> Open in Safari → Share → Add to Home Screen →
         Open as Web App.

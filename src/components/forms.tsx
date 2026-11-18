@@ -19,13 +19,15 @@ import { Input, Select, Textarea } from "./ui/input";
 export function Submit({
   children,
   className,
+  disabled = false,
 }: {
   children: React.ReactNode;
   className?: string;
+  disabled?: boolean;
 }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" disabled={pending} className={className}>
+    <Button type="submit" disabled={pending || disabled} className={className}>
       {pending ? <LoaderCircle className="animate-spin" /> : null}
       {pending ? "Saving…" : children}
     </Button>

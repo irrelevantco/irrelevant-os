@@ -104,6 +104,17 @@ try {
   await expect(
     window.getByRole("heading", { name: "Welcome back." }),
   ).toBeVisible({ timeout: 60000 });
+  if (process.platform === "win32") {
+    const encryption = await electronApp.evaluate(
+      ({ safeStorage }) =>
+        safeStorage.isEncryptionAvailable() &&
+        safeStorage.decryptString(
+          safeStorage.encryptString("synthetic-encryption-check"),
+        ) === "synthetic-encryption-check",
+    );
+    if (!encryption)
+      throw Error("Windows OS credential encryption is unavailable.");
+  }
   if (new URL(window.url()).port === "3030")
     throw new Error("Desktop unexpectedly depended on port 3030.");
   if (real) {
@@ -115,6 +126,15 @@ try {
     await expect(
       window.getByRole("heading", { name: "Make the next move." }),
     ).toBeVisible();
+    const automation = await electronApp.evaluate(async ({ BrowserWindow }) => {
+      return BrowserWindow.getAllWindows()[0].webContents.executeJavaScript(
+        'fetch("/api/automation/tick", { method: "POST", credentials: "same-origin", cache: "no-store" }).then(async response => ({status:response.status,body:await response.json()}))',
+      );
+    });
+    if (automation.status !== 200 || automation.body.reason !== "paused")
+      throw Error(
+        "Authenticated native automation tick was not safely paused.",
+      );
     await window
       .getByRole("link", { name: "Agent control", exact: true })
       .click();
@@ -131,14 +151,12 @@ try {
       ["Employee ID", "Name"],
       ["00017", "Synthetic Employee"],
     ]);
-    await window
-      .getByLabel("Spreadsheet or CSV file")
-      .setInputFiles({
-        name: "desktop-test.xlsx",
-        mimeType:
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        buffer: Buffer.from(await workbook.xlsx.writeBuffer()),
-      });
+    await window.getByLabel("Spreadsheet or CSV file").setInputFiles({
+      name: "desktop-test.xlsx",
+      mimeType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      buffer: Buffer.from(await workbook.xlsx.writeBuffer()),
+    });
     await expect(
       window.getByText(/1 source rows · 1 valid · 0 need review/),
     ).toBeVisible();

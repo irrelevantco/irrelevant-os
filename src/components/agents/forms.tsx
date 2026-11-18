@@ -54,7 +54,7 @@ export function AgentSettingsForm({
             name="daily_job_limit"
             type="number"
             min={1}
-            max={25}
+            max={100}
             defaultValue={settings?.daily_job_limit ?? 10}
           />
         </Field>

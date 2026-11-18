@@ -91,7 +91,7 @@ describe("preparation contracts", () => {
   });
   it("caps jobs and credits", () => {
     expect(
-      settingsSchema.safeParse({ ...input.settings, daily_job_limit: 26 })
+      settingsSchema.safeParse({ ...input.settings, daily_job_limit: 101 })
         .success,
     ).toBe(false);
     expect(
@@ -124,24 +124,22 @@ describe("Explee company search", () => {
     expect(transport).not.toHaveBeenCalled();
   });
   it("uses only fixed company search, bounded page size and no enrichment", async () => {
-    const transport = vi
-      .fn()
-      .mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            success: true,
-            companies: [
-              {
-                name: "Example Clean",
-                url: "https://example.test",
-                geo_city: "Erie",
-                revenue_annual: 10000000,
-              },
-            ],
-            meta: { credits_charged: 1, results_count: 1 },
-          }),
-        ),
-      );
+    const transport = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          success: true,
+          companies: [
+            {
+              name: "Example Clean",
+              url: "https://example.test",
+              geo_city: "Erie",
+              revenue_annual: 10000000,
+            },
+          ],
+          meta: { credits_charged: 1, results_count: 1 },
+        }),
+      ),
+    );
     const result = await discover(query, "test", 1, transport);
     expect(transport).toHaveBeenCalledOnce();
     const [url, request] = transport.mock.calls[0];
@@ -173,16 +171,14 @@ describe("Explee company search", () => {
     expect(transport).toHaveBeenCalledOnce();
   });
   it("reports unexpected credit charges for fail-closed pause", async () => {
-    const transport = vi
-      .fn()
-      .mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            companies: [],
-            meta: { credits_charged: 2, results_count: 0 },
-          }),
-        ),
-      );
+    const transport = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          companies: [],
+          meta: { credits_charged: 2, results_count: 0 },
+        }),
+      ),
+    );
     expect(
       (await discover(query, "test", 1, transport)).allowance_exceeded,
     ).toBe(true);

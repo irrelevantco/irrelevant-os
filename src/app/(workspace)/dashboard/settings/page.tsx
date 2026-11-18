@@ -1,3 +1,4 @@
+import { supabaseConfig } from "@/lib/supabase/config";
 import { requireContext } from "@/lib/context";
 import { PageHeading } from "@/components/page-heading";
 import { OrganizationForm } from "@/components/forms";
@@ -8,6 +9,12 @@ import Link from "next/link";
 export const metadata = { title: "Settings" };
 export default async function Settings() {
   const { organization, user, role } = await requireContext();
+  const backend = supabaseConfig().url;
+  const appUrl = process.env.APP_URL;
+  const hostedUrl =
+    appUrl?.startsWith("https://") && backend?.startsWith("https://")
+      ? new URL(appUrl).origin
+      : null;
   return (
     <>
       <PageHeading
@@ -43,14 +50,15 @@ export default async function Settings() {
             <p className="eyebrow mb-3 text-muted-foreground">Integrations</p>
             <p className="text-xs leading-6 text-muted-foreground">
               Controlled preparation jobs and manual contact logging are
-              available in Agent control. Gmail sending, calendar sync,
-              contracts and payments are not connected.
+              available in Agent control. Google connection, approved email
+              delivery and appointment controls are available under Connections.
+              Contracts and payments remain unconnected.
             </p>
           </div>
         </Card>
         <Card className="p-6">
           <h2 className="mb-5 text-base font-medium">Use it on your phone</h2>
-          <InstallApp />
+          <InstallApp hostedUrl={hostedUrl} />
           <Link
             href="/dashboard/agents"
             className="mt-4 inline-block text-sm text-primary underline"

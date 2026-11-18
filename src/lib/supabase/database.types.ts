@@ -772,6 +772,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      google_connection: { Args: { org: string; payload?: Json }; Returns: Json };
+      acquisition_state: { Args: { org: string; payload?: Json }; Returns: Json };
+      save_acquisition_settings: { Args: { org: string; payload?: Json }; Returns: Json };
+      enqueue_hourly_discovery: { Args: { org: string; payload?: Json }; Returns: Json };
+      discovery_seen_sources: { Args: { org: string; payload?: Json }; Returns: Json };
+      save_agreed_meeting: { Args: { org: string; payload?: Json }; Returns: Json };
+      cancel_sales_meeting: { Args: { org: string; payload?: Json }; Returns: Json };
+      approve_email_delivery: { Args: { org: string; payload?: Json }; Returns: Json };
+      claim_email_delivery: { Args: { org: string; payload?: Json }; Returns: Json };
+      finish_email_delivery: { Args: { org: string; payload?: Json }; Returns: Json };
+      calendar_meeting: { Args: { org: string; payload?: Json }; Returns: Json };
+
       accept_agent_draft: {
         Args: { job: string; org: string }
         Returns: undefined

@@ -26,14 +26,14 @@ The default lightweight development profile uses real PostgreSQL 15, Supabase Au
 
 The PWA manifest supports installation. The service worker provides a static offline message on network failure; it never writes CRM data or authenticated responses to caches. The application remains online-only.
 
-## Future module contracts (not implemented)
+## Remaining module contracts
 
 - Discovery: provider interface `discover(query, cursor, budget)` returns normalized businesses plus evidence/provenance; provider capabilities declare permitted fields, licensing, attribution and rate limits. No protected-platform scraping.
 - Qualification: versioned scoring policy with five criteria, evidence links, observed-at times, verified/assumed distinction and confidence. Store inputs and explanations, never a bare unexplained score.
 - Growth reviews: versioned observations/recommendations under Digital Presence, Social Presence and Customer Growth; editable artifacts, human approval, then branded PDF generation and separately authorized delivery.
 - AI: server-only provider interface for structured generation, model configuration, token/cost accounting and budgets. OpenAI and Ollama adapters behind one boundary. No API calls in Phase 1.
 - Automation: Inngest (or a reliable equivalent) event handlers persist job state, idempotency keys, retries, quotas and cancellation. Pause/stop controls must be enforced by workers before every side effect, not only by UI.
-- Google: encrypted refresh-token storage, least-privilege grants, explicit draft version approvals, bounded Gmail sends, thread sync, opt-outs and Calendar. See GOOGLE_INTEGRATION.md.
+- Google: thread/reply and opt-out synchronization remain unimplemented. OAuth, individually approved sends and Calendar adapters are described below and in GOOGLE_INTEGRATION.md.
 - Commerce: proposals, separately signed contracts, schedules and Stripe test-mode checkout/invoices. Verified webhook events are authoritative for payment; a redirect is not. Annual contract obligations and recurring charges are distinct.
 - Delivery: client workspaces, scoped tasks, private Storage assets, deliverables/revisions, cost ledger and monthly reporting. Creator fulfillment remains a future extension point.
 
@@ -55,3 +55,11 @@ The Electron personal shell bundles the same Next standalone output, starts it o
 ## Shared conversion and discovery adapters (0.2.2)
 
 `src/lib/converter` contains bounded spreadsheet parsing, template mappings, row validation and CSV/XLSX/JSON export. ExcelJS loads on demand in the client. No employee/payroll data leaves the browser. Prospect conversion hands canonical text to the existing authenticated import preview and commit actions. `openstreetmap.ts` is a fixed-endpoint, bounded key-free provider; optional Explee remains isolated. Neither adapter changes the CRM until an owner reviews and commits an import. See DATA_CONVERTER.md and COMPANY_WORKSPACES.md for current boundaries and proposed company-specific templates.
+
+## Controlled acquisition and appointments (0.3.0)
+
+Opt-in discovery uses database-clock hourly keys, fixed categories, per-day limits and owner-session execution. The web runner operates while open; the desktop runner uses a native timer and the same authenticated, origin-checked endpoint. Neither runs while the app/PC is off. Successful discovery stages a normal import preview, never an unapproved business import. Historical source IDs filter repeat candidates.
+
+Google refresh credentials are AES-GCM encrypted with organization, owner and runtime key identity as associated data. Ciphertext lives in an unexposed private schema behind owner-only functions. Desktop secrets additionally use OS-backed safeStorage. OAuth uses state and PKCE, verifies the fixed sender account and requests send/owned-calendar capabilities without Gmail reading. Delivery approval binds the exact recipient, draft revision and complete message with sender identity/footer; a single claim precedes the provider call. Uncertain outcomes cannot be automatically retried, and the manual resolution interface remains future work. These adapters have synthetic provider tests; real Google account setup and live validation remain pending.
+
+Agreed appointments require a recorded agreement, enforce Eastern weekday working hours, and prevent local overlaps. Calendar writes require separate approval, deterministic event IDs and an availability check. Guest invitations require explicit approval; internal agreement notes never enter event descriptions. Dashboard opportunity estimates count each open lead once with an active agreed appointment and refresh through an authenticated, uncached endpoint every ten visible seconds. Estimates are not revenue or signed contracts.

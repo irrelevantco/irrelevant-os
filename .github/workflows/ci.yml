@@ -24,6 +24,7 @@ jobs:
       - run: npm run test:rls
       - run: npm run test:imports
       - run: npm run test:agents
+      - run: npm run test:acquisition
       - run: npm run test:upgrade
       - run: npm run build
       - run: npx playwright install --with-deps chromium

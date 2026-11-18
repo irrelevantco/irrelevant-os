@@ -1,41 +1,42 @@
-# Google integration plan — Phase 4, not implemented
+# Google connection — personal preview 0.3.0
 
-Phase 1 supports Supabase email/password authentication only. Google OAuth, Gmail drafts/sending, replies, Calendar and encrypted provider token storage are not present. Environment keys are placeholders, not connected capabilities.
+The OAuth, encrypted credential store, exact-message Gmail delivery and owned-calendar adapters are implemented. No Google Cloud project/client has been created in this session; Google Cloud sign-in was not completed. Live Gmail sending and Calendar writes have **not** been verified or activated. Provider transport tests use synthetic responses and never send a message or invitation.
 
-## Separate identity from capabilities
+## Create the Google application
 
-Google login, if later added, is distinct from permission to read/send Gmail or manage Calendar. Begin with least-privilege incremental OAuth grants and clear account identity. Never request broad scopes merely because the API offers them. Use exact redirect URIs, anti-CSRF state, PKCE where supported, short-lived state and server-side code exchange.
+Use an account you control in Google Cloud Console. Create/select a project and enable **Gmail API** and **Google Calendar API**. This app does not provision paid Google services. Configure Google Auth Platform branding/audience and a contact email you control. For personal testing, add `contact.irrelevantcollective@gmail.com` as a test user. External testing refresh tokens can expire after seven days; expect reconnection. Production use and additional users may require Google's verification and appropriate published privacy information.
 
-Potential scopes, selected only for an implemented capability:
+The implemented permissions are `openid`, `email`, `gmail.send`, `calendar.freebusy`, and `calendar.events.owned` (Google API scopes use the full `https://www.googleapis.com/auth/` prefix). They identify the verified account, send approved mail, check availability and create/reconcile events on owned calendars. Mailbox reading, reply synchronization and Gmail-native drafts are not included. Google login for the CRM is separate from this capability connection.
 
-| Capability                 | Candidate scope                          | Notes                                                         |
-| -------------------------- | ---------------------------------------- | ------------------------------------------------------------- |
-| Connect identity           | openid email profile                     | Avoid profile if name/avatar are unnecessary                  |
-| Send approved messages     | gmail.send                               | Does not grant full mailbox access                            |
-| Read reply threads         | gmail.readonly                           | Restricted scope; minimization/verification obligations apply |
-| Create Gmail-native drafts | gmail.compose                            | Broader restricted scope; prefer app-local drafts first       |
-| Mark/modify mailbox items  | gmail.modify                             | Do not request unless explicit behavior requires it           |
-| Availability               | calendar.freebusy                        | Prefer to broad calendar read                                 |
-| Create owned event         | calendar.events.owned or calendar.events | Choose least capable valid scope for the actual calendar      |
+### Windows bundled application
 
-Review Google's current requirements at implementation time. Gmail read/compose scopes can require OAuth verification and additional assessments depending on data handling and user type. Do not claim an integration is ready until consent, token lifecycle and required verification are tested.
+1. Create an OAuth client of type **Desktop app** and download its official client JSON. A Web client JSON or service-account key is not interchangeable.
+2. In iRRELEVANT OS choose **Workspace → Import Google OAuth setup…** and select that JSON locally. No secret belongs in chat, Git or your CSV. The client secret and a generated encryption key are encrypted with the OS credential facility in the current Windows profile; the app refuses plaintext fallback.
+3. Choose **Workspace → Open Google connection in browser…**. Sign in to the CRM in that browser, then choose **Connect / renew Google permission**. Google consent happens in the system browser, not an embedded Electron login. The Desktop client uses the app's automatic loopback callback port with PKCE and one-time code exchange.
+4. Select the verified company Gmail account. A different account is rejected. The callback stores encrypted credentials; it does not enable sending.
 
-## Token and data boundary
+### Hosted web application
 
-Store encrypted provider credentials in a tenant-scoped server-only connection store excluded from client SELECT grants. AES-256-GCM (or equivalent authenticated encryption), random nonce, versioned key ID, rotation path, refresh locking and sanitized errors. Keep refresh tokens out of logs, client props, cookies, localStorage and public environment variables. Bind the connection to the approving operator and organization; prevent sharing access across tenants. Disconnect revokes when possible and removes stored tokens.
+Create a **Web application** OAuth client. Register the exact redirect `https://YOUR-ACTUAL-HOST/api/integrations/google/callback`. Set server-only `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, and `OAUTH_TOKEN_ENCRYPTION_KEY` (32 cryptographically random bytes, base64). Use the host's secret input, never a public variable. Restart/redeploy and complete the same connection flow from Connections. `APP_URL` must be the actual canonical HTTPS origin.
 
-## Outbound state machine
+The encryption key must persist across deploys. Changing it requires reconnecting or a reviewed key rotation. Credential envelopes are bound to organization, owner and encryption-key identifier. A desktop installation and hosted server can have distinct encrypted connections without overwriting each other. For one shared Google connection across devices, use the hosted application on phone and desktop's hosted-app mode. Disconnect removes this runtime's encrypted credential; revoke the app's grant separately in Google Account settings if desired.
 
-App-local draft → reviewed exact version → explicit approved send request → bounded queued job → suppression/approval/quota/cancellation recheck → provider send → immutable provider message/thread ID and result. Edits invalidate approval. Store a unique idempotency key and reconcile ambiguous provider responses before retrying; never blindly send a second email after a timeout. Gmail sending has no general server-side idempotency key, so ambiguous sends need human reconciliation.
+## Send one reviewed message
 
-Sender identity, public postal address, opt-out instructions, small daily limits and suppression checks are mandatory before enabling any send action. A positive-reply classifier offers an interpretation for operator review and cannot schedule or send autonomously. Opt-outs suppress promptly, even if the CRM stage has not been manually updated.
+Configure sender name, the exact company sender email and a real business postal address in Agent control. Research and manually approve a sourced Growth Review. Save the outreach draft. On Connections, explicitly enable approved sending, then review the saved recipient, subject, full body and appended identity/opt-out footer on the prospect's outreach page. **Approve and send this email** submits that exact artifact.
 
-## Reply and Calendar sync
+The server checks owner identity, Google scope, suppression, pause state, saved draft/review revision, recipient, full body and daily quota again. Five attempts/day/organization is the fixed personal-preview limit, including uncertain attempts. Duplicate fingerprints/request keys cannot send twice. A confirmed Gmail message ID creates actual outbound contact; creating a draft or approving a proposal does not. An uncertain HTTP/DB result is never automatically retried. Check Gmail and recorded delivery history before any further action.
 
-Start with manually initiated, bounded thread sync or polling; later use validated Gmail watch/PubSub notifications and history cursors with expiry recovery. Fetch only necessary threads and retain minimal content. Rate-limit by organization/account and log provider usage/errors without message bodies. Avoid double importing by unique account + provider message ID.
+Replies and opt-outs currently require manual logging in the CRM before further outreach. This app has no mailbox-reading grant. Hourly discovery does not send messages or automatically accept draft proposals.
 
-Calendar availability and event creation require separate authorization. Avoid duplicate events through durable request keys and provider reconciliation. Capture timezone, guests and conferencing preferences explicitly. Never notify invitees or create external events without approval.
+## Agreed calls and meetings
 
-## Required tests
+Record an actual agreement, future Eastern date/time, 15–120 minute duration and optional manual opportunity estimate in Calls & meetings. SQL enforces Monday–Friday, 7 a.m.–3 p.m. Eastern, and prevents overlapping local appointments. The entire duration must fit. An agreement creates a CRM appointment, not a Google event or a phone call.
 
-OAuth state/redirect attacks; revoked grants; refresh expiry/concurrency; cross-tenant connection access; encrypted token round trips/key rotation; scope minimization; edited draft approval invalidation; duplicate/ambiguous sends; daily limits and suppression races; opted-out replies; cancellation; bounded retries; thread deduplication; Calendar timezone and duplicate handling. Default sending and external scheduling remain disabled until these pass and the user authorizes activation.
+A separate approval creates/reconciles the primary Google Calendar event after checking availability. A deterministic provider event ID prevents duplicate events. By default no guest is invited; the owner must explicitly approve the public contact as a guest and acknowledge their agreement before notifications are requested. Reconciling an existing event does not send a new invitation. Externally linked/uncertain appointments can be cancelled through a separate approved cancellation, which checks the deterministic event first and updates local value only after Google confirms cancellation. Rescheduling and automatic external-change/reply sync remain future work.
+
+## Security and verification
+
+Credentials use AES-256-GCM, random nonces, versioned envelopes and authenticated context. Only owner-authenticated RPCs access the private encrypted store. No service-role client, anonymous worker, browser token exposure or persistent worker password is introduced. Lifecycle audit entries contain field names, never token values. OAuth uses encrypted HttpOnly SameSite cookies, expiry, owner/organization binding, state, PKCE and fixed Google endpoints. Keep the application owner-private while production hardening and Google verification are pending.
+
+Sources: [Google web OAuth](https://developers.google.com/identity/protocols/oauth2/web-server), [Gmail scopes](https://developers.google.com/workspace/gmail/api/auth/scopes), [Calendar event creation](https://developers.google.com/workspace/calendar/api/v3/reference/events/insert).

@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  CalendarDays,
+  Plug,
   Activity,
   Workflow,
   FileSpreadsheet,
@@ -30,6 +32,12 @@ const items = [
   { href: "/dashboard/research", label: "Research", icon: NotebookPen },
   { href: "/dashboard/outreach", label: "Outreach drafts", icon: Mail },
   { href: "/dashboard/agents", label: "Agent control", icon: Workflow },
+  {
+    href: "/dashboard/schedule",
+    label: "Calls & meetings",
+    icon: CalendarDays,
+  },
+  { href: "/dashboard/connections", label: "Connections", icon: Plug },
   { href: "/dashboard/activity", label: "Activity", icon: Activity },
   { href: "/dashboard/settings", label: "Settings", icon: Settings2 },
 ];
@@ -52,7 +60,7 @@ export function Sidebar({ organization }: { organization: string }) {
       </p>
       <nav
         aria-label="Workspace navigation"
-        className="flex gap-1 overflow-x-auto px-3 pb-3 lg:grid lg:px-4 lg:pb-0"
+        className="flex gap-1 overflow-x-auto px-3 pb-3 lg:grid lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:px-4 lg:pb-0"
       >
         {items.map(({ href, label, icon: Icon }) => {
           const active =

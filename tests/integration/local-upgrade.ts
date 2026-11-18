@@ -112,7 +112,12 @@ try {
   });
   check(
     JSON.stringify(result.applied) ===
-      JSON.stringify(["20261117175427", "20261117203425", "20261117221021"]),
+      JSON.stringify([
+        "20261117175427",
+        "20261117203425",
+        "20261117221021",
+        "20261117231231",
+      ]),
     "Applied precisely the missing migrations",
   );
   check(
@@ -123,7 +128,7 @@ try {
     sql(
       dbName,
       "select count(*) from pg_tables where schemaname='public' and rowsecurity;",
-    ) === "15",
+    ) === "18",
     "All application tables retain RLS",
   );
   check(

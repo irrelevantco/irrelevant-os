@@ -1,3 +1,5 @@
+import { headers } from "next/headers";
+import { AcquisitionRunner } from "@/components/acquisition/runner";
 import { LogOut, Search } from "lucide-react";
 import { requireContext } from "@/lib/context";
 import { Sidebar } from "@/components/sidebar";
@@ -9,10 +11,29 @@ export default async function WorkspaceLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, organization, memberships } = await requireContext();
+  const { db, user, organization, memberships, role } = await requireContext();
+  const automatic =
+    role === "owner"
+      ? await db.rpc("acquisition_state", {
+          org: organization.id,
+          payload: { metrics_only: true },
+        })
+      : null;
+  const automaticEnabled =
+    (automatic?.data as { settings?: { enabled?: boolean } } | null)?.settings
+      ?.enabled === true;
   return (
     <div className="min-h-screen">
       <Sidebar organization={organization.name} />
+      {role === "owner" && automaticEnabled && (
+        <AcquisitionRunner
+          desktop={
+            process.env.IRRELEVANT_DESKTOP === "true" ||
+            ((await headers()).get("user-agent")?.includes("Electron/") ??
+              false)
+          }
+        />
+      )}
       <div className="lg:ml-60">
         <header className="flex min-h-20 flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4 sm:px-9">
           <form

@@ -41,3 +41,8 @@ A hosted scheduler can be added later through a reviewed authenticated job syste
 
 
 Version 0.2.3 replaces the initial unreachable Private.coffee endpoint. A live city/trade request against the North America endpoint returned five unverified candidates, with no import. It is a community service, not a guaranteed production backend for future resale; review capacity and terms before broader distribution.
+
+
+## Version 0.3.0 extension
+
+The new Connections screen can explicitly enable bounded hourly discovery (up to 56 searches/day across seven categories) with a total 100-job ceiling. Three manual free requests/day remain separate. Completed candidates stage an import preview automatically; no business is auto-imported or qualified. The native desktop runner needs the app open and owner signed in. Gmail sends and Calendar writes have separate exact-artifact approvals and do not run from preparation jobs. See ACQUISITION_AUTOMATION.md and GOOGLE_INTEGRATION.md; credentials and live Google activation are still required.
