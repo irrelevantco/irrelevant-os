@@ -1,6 +1,14 @@
 // Isolated native Windows install/update fixture. No Google, CRM or public feed calls.
 import { _electron, expect } from "@playwright/test";
-import { mkdtemp, readFile, writeFile, cp, mkdir, rm } from "node:fs/promises";
+import {
+  mkdtemp,
+  readFile,
+  writeFile,
+  cp,
+  mkdir,
+  rm,
+  realpath,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -21,7 +29,9 @@ const folder = await mkdtemp(path.join(tmpdir(), "irrelevant-update-test-"));
 const install = path.join(folder, "installed");
 const profile = path.join(folder, "profile");
 const exe = path.join(install, "iRRELEVANT OS.exe");
-let electronApp, server;
+let electronApp,
+  server,
+  monitorLogged = false;
 const environment = { ...process.env, IRRELEVANT_DESKTOP_PROFILE: profile };
 delete environment.ELECTRON_RUN_AS_NODE;
 function run(command, args, env = process.env) {
@@ -43,14 +53,28 @@ async function runningPids() {
       "-NoProfile",
       "-NonInteractive",
       "-Command",
-      "Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -eq $env:IR_UPDATE_TEST_EXE } | Select-Object -ExpandProperty ProcessId",
+      "Get-CimInstance Win32_Process -Filter \"Name = 'iRRELEVANT OS.exe'\" | Select-Object ProcessId,ExecutablePath | ConvertTo-Json -Compress",
     ],
-    { env: { ...process.env, IR_UPDATE_TEST_EXE: exe }, encoding: "utf8" },
+    { encoding: "utf8" },
   );
-  return r.stdout
-    .trim()
-    .split(/\s+/)
-    .filter((v) => /^\d+$/.test(v));
+  if (r.status !== 0) throw Error("Windows process enumeration failed.");
+  const rows = [JSON.parse(r.stdout.trim() || "[]")].flat();
+  const expected = await realpath(exe).catch(() => "");
+  if (!monitorLogged) {
+    console.log(
+      "Native fixture process monitor:",
+      JSON.stringify({ expected, reported: rows }),
+    );
+    monitorLogged = true;
+  }
+  const pids = [];
+  for (const row of rows) {
+    if (!row?.ExecutablePath) continue;
+    const actual = await realpath(row.ExecutablePath).catch(() => "");
+    if (expected && actual.toLowerCase() === expected.toLowerCase())
+      pids.push(String(row.ProcessId));
+  }
+  return pids;
 }
 try {
   run(
@@ -169,6 +193,11 @@ try {
     );
     return bytes.toString("base64");
   });
+  const initialPid = await electronApp.evaluate(() => process.pid);
+  if (!(await runningPids()).includes(String(initialPid)))
+    throw Error(
+      "Native process monitor cannot identify the running fixture before update.",
+    );
   const rejected = await electronApp.evaluate(async ({ app }) => {
     const moduleRequire = process
       .getBuiltinModule("node:module")
@@ -188,6 +217,7 @@ try {
     }
   });
   if (!rejected) throw Error("A corrupted update was not rejected.");
+  console.log("Native updater rejected the corrupted installer.");
   if (JSON.parse(await readFile(packageFile, "utf8")).version !== current)
     throw Error("Corrupt update changed installed files.");
   corrupt = false;
@@ -229,6 +259,7 @@ try {
       { timeout: 120000 },
     )
     .toBe(next);
+  console.log("Native updater installed fixture version", next);
   await expect
     .poll(async () => (await runningPids()).length, { timeout: 60000 })
     .toBeGreaterThan(0);
