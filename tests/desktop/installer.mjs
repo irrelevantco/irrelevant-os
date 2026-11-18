@@ -158,8 +158,8 @@ try {
     }),
   ).toBeVisible();
   const encrypted = await electronApp.evaluate(async ({ app, safeStorage }) => {
-    const fs = require("node:fs/promises"),
-      path = require("node:path");
+    const fs = process.getBuiltinModule("node:fs/promises"),
+      path = process.getBuiltinModule("node:path");
     const bytes = safeStorage.encryptString(
       JSON.stringify({ test_marker: "Synthetic retained Google setup" }),
     );
@@ -170,12 +170,14 @@ try {
     return bytes.toString("base64");
   });
   const rejected = await electronApp.evaluate(async ({ app }) => {
-    const updater = require(
-      require("node:path").join(
-        app.getAppPath(),
-        "node_modules/electron-updater",
-      ),
-    ).autoUpdater;
+    const moduleRequire = process
+      .getBuiltinModule("node:module")
+      .createRequire(
+        process
+          .getBuiltinModule("node:path")
+          .join(app.getAppPath(), "main.cjs"),
+      );
+    const updater = moduleRequire("electron-updater").autoUpdater;
     updater.disableDifferentialDownload = true;
     await updater.checkForUpdates();
     try {
@@ -190,23 +192,27 @@ try {
     throw Error("Corrupt update changed installed files.");
   corrupt = false;
   await electronApp.evaluate(async ({ app }) => {
-    const updater = require(
-      require("node:path").join(
-        app.getAppPath(),
-        "node_modules/electron-updater",
-      ),
-    ).autoUpdater;
+    const moduleRequire = process
+      .getBuiltinModule("node:module")
+      .createRequire(
+        process
+          .getBuiltinModule("node:path")
+          .join(app.getAppPath(), "main.cjs"),
+      );
+    const updater = moduleRequire("electron-updater").autoUpdater;
     await updater.checkForUpdates();
     await updater.downloadUpdate();
   });
   const closed = electronApp.waitForEvent("close", { timeout: 60000 });
   await electronApp.evaluate(({ app }) => {
-    const updater = require(
-      require("node:path").join(
-        app.getAppPath(),
-        "node_modules/electron-updater",
-      ),
-    ).autoUpdater;
+    const moduleRequire = process
+      .getBuiltinModule("node:module")
+      .createRequire(
+        process
+          .getBuiltinModule("node:path")
+          .join(app.getAppPath(), "main.cjs"),
+      );
+    const updater = moduleRequire("electron-updater").autoUpdater;
     setTimeout(() => updater.quitAndInstall(true, true), 50);
   });
   await closed;
@@ -241,9 +247,13 @@ try {
     timeout: 60000,
   });
   const retained = await electronApp.evaluate(async ({ app, safeStorage }) => {
-    const value = await require("node:fs/promises").readFile(
-      require("node:path").join(app.getPath("userData"), "google-setup.bin"),
-    );
+    const value = await process
+      .getBuiltinModule("node:fs/promises")
+      .readFile(
+        process
+          .getBuiltinModule("node:path")
+          .join(app.getPath("userData"), "google-setup.bin"),
+      );
     return {
       version: app.getVersion(),
       value: JSON.parse(safeStorage.decryptString(value)).test_marker,
