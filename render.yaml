@@ -8,7 +8,7 @@ services:
     repo: https://github.com/irrelevantco/irrelevant-os
     branch: main
     autoDeployTrigger: off
-    buildCommand: npm ci && npm run build && node scripts/stage-standalone.mjs
+    buildCommand: npm ci --include=dev && npm run build && node scripts/stage-standalone.mjs
     startCommand: node .next/standalone/server.js
     healthCheckPath: /
     envVars:
@@ -16,6 +16,8 @@ services:
         value: "24"
       - key: NODE_ENV
         value: production
+      - key: NPM_CONFIG_INCLUDE
+        value: dev
       - key: HOSTNAME
         value: 0.0.0.0
       - key: SUPABASE_URL
