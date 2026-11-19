@@ -1,0 +1,49 @@
+name: Local startup repair checks
+on:
+  push:
+    paths:
+      - scripts/repair-local-windows.ps1
+      - compose.phase1.yml
+      - .github/workflows/local-startup-repair.yml
+permissions:
+  contents: read
+jobs:
+  preserve-existing-database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Reproduce the old configuration and an existing CRM database
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('compose.phase1.yml')
+          p.write_text(p.read_text().replace('  db:\n','  db:\n    ports: ["127.0.0.1:54322:5432"]\n',1))
+          PY
+          node scripts/local-env.mjs
+          docker compose --env-file work/stack.env -f compose.phase1.yml up -d --wait
+          node scripts/local-migrate.mjs
+          docker exec irrelevant-phase1-db-1 psql -U postgres -d postgres -c 'create table public.repair_probe(value text); insert into public.repair_probe values ($$existing data retained$$);'
+          docker compose --env-file work/stack.env -f compose.phase1.yml stop
+      - name: Check plan and repair stopped containers with PowerShell
+        shell: pwsh
+        run: |
+          ./scripts/repair-local-windows.ps1 -PlanOnly
+          if ($LASTEXITCODE -ne 0) { throw 'Repair plan failed' }
+          ./scripts/repair-local-windows.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Repair failed' }
+          $value = docker exec irrelevant-phase1-db-1 psql -U postgres -d postgres -Atc 'select value from public.repair_probe;'
+          if ($value -ne 'existing data retained') { throw 'Existing record was not retained' }
+          $db = docker inspect irrelevant-phase1-db-1 | ConvertFrom-Json
+          if ($db[0].HostConfig.PortBindings.'5432/tcp') { throw 'Database port is still published' }
+          foreach ($name in 'db','auth','rest','gateway') {
+            $c = docker inspect "irrelevant-phase1-$name-1" | ConvertFrom-Json
+            if ($c[0].HostConfig.RestartPolicy.Name -ne 'unless-stopped') { throw 'Restart policy was not applied' }
+          }
+          ./scripts/repair-local-windows.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Repeated repair failed' }
+      - if: always()
+        run: docker compose --env-file work/stack.env -f compose.phase1.yml -f work/windows-startup-repair.yml down
