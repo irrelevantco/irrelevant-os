@@ -648,7 +648,7 @@ try {
   );
   sql(
     database,
-    `insert into public.agent_jobs(organization_id,lead_id,kind,idempotency_key,status,input,attempts,created_at,started_at) select '${org}','${secondLead}','research_audit',gen_random_uuid()::text,'failed','{"ai_provider":"rules","ai_model":""}',1,${clock}-interval '1 day',${clock} from generate_series(1,24);`,
+    `insert into public.agent_jobs(organization_id,lead_id,kind,idempotency_key,status,input,attempts,created_by,created_at,started_at) select '${org}','${secondLead}','research_audit',gen_random_uuid()::text,'failed','{"ai_provider":"rules","ai_model":""}',1,'${owner}',${clock}-interval '1 day',${clock} from generate_series(1,24);`,
   );
   const backlog = String(
     sql(
@@ -678,6 +678,9 @@ try {
       ),
     ) === null,
     "Carried-over research starts consume today's dispatch allowance",
+  );
+  console.log(
+    "Pre-import engine checks passed; verifying large-batch import and provenance.",
   );
   const csv =
     "business_name,industry,location,source_url,source_timestamp,research_priority,audit_hypothesis_not_verified\n" +
