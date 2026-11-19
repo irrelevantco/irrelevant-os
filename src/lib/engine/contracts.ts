@@ -71,6 +71,9 @@ export const engineSettingsSchema = z.object({
   auto_import: z.boolean(),
   daily_research_limit: z.coerce.number().int().min(1).max(50),
   daily_discovery_limit: z.coerce.number().int().min(1).max(56),
+  schedule_start_hour: z.coerce.number().int().min(7).max(14).default(7),
+  schedule_end_hour: z.coerce.number().int().min(8).max(15).default(15),
+  cycle_minutes: z.coerce.number().pipe(z.union([z.literal(1),z.literal(5),z.literal(15),z.literal(30),z.literal(60)])).default(1),
   ai_provider: z.enum(["rules", "ollama", "openai"]).default("rules"),
   ai_model: z
     .string()
@@ -93,7 +96,7 @@ export const engineSettingsSchema = z.object({
     .min(1)
     .max(13)
     .refine((a) => new Set(a).size === a.length),
-});
+}).refine(value=>value.schedule_start_hour<value.schedule_end_hour,"The automation window must end after it starts.");
 export const campaignPolicySchema = z.object({
   daily_limit: z.coerce.number().int().min(1).max(500),
   total_limit: z.coerce.number().int().min(1).max(1000),
@@ -130,10 +133,13 @@ export const DEFAULT_SETTINGS: EngineSettings = {
   categories: ENGINE_CATEGORIES,
   ai_provider: "rules",
   ai_model: "",
+  schedule_start_hour: 7,
+  schedule_end_hour: 15,
+  cycle_minutes: 1,
 };
 export const engineStateSchema = z.object({
   settings: engineSettingsSchema
-    .extend({
+    .safeExtend({
       campaign_revision: z.number(),
       campaign_until: z.string().nullable(),
       campaign_daily_limit: z.number(),

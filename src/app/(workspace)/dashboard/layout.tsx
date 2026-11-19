@@ -5,6 +5,7 @@ import { requireContext } from "@/lib/context";
 import { Sidebar } from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
 import { signOut, switchOrganization } from "@/app/actions";
+import { WorkspaceTransition } from "@/components/workspace-transition";
 export const dynamic = "force-dynamic";
 export default async function WorkspaceLayout({
   children,
@@ -115,7 +116,7 @@ export default async function WorkspaceLayout({
           id="main"
           className="mx-auto max-w-[1600px] px-5 py-8 sm:px-9 sm:py-10"
         >
-          {children}
+          <WorkspaceTransition>{children}</WorkspaceTransition>
         </main>
         <footer className="mx-5 flex flex-wrap justify-between gap-2 border-t border-border py-5 text-[10px] text-muted-foreground sm:mx-9">
           <span>iRRELEVANT OS / Build your position.</span>

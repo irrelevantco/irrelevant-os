@@ -120,6 +120,17 @@ export function EngineSettingsForm({
           />
         </Field>
       </div>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Field label="Automation starts · Eastern">
+          <Select name="schedule_start_hour" defaultValue={String(values.schedule_start_hour)}>{[7,8,9,10,11,12,13,14].map(h=><option key={h} value={h}>{String(h).padStart(2,"0")}:00</option>)}</Select>
+        </Field>
+        <Field label="Automation ends · Eastern">
+          <Select name="schedule_end_hour" defaultValue={String(values.schedule_end_hour)}>{[8,9,10,11,12,13,14,15].map(h=><option key={h} value={h}>{String(h).padStart(2,"0")}:00</option>)}</Select>
+        </Field>
+        <Field label="Check queued work">
+          <Select name="cycle_minutes" defaultValue={String(values.cycle_minutes)}>{[1,5,15,30,60].map(m=><option key={m} value={m}>Every {m===1?"minute":`${m} minutes`}</option>)}</Select>
+        </Field>
+      </div>
       <Field
         label="Discovery territories"
         hint="One City, STATE per line; up to 50. Coverage varies, and a listing is not proof of a current business, email address or service budget."

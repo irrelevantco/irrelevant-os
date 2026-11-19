@@ -778,6 +778,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assistant_schedule: { Args: { org: string }; Returns: Json }
       engine_state: { Args: { org: string; payload?: Json }; Returns: Json }
       engine_control: { Args: { org: string; payload: Json }; Returns: Json }
       pipeline_page: { Args: { org: string; payload?: Json }; Returns: Json }
