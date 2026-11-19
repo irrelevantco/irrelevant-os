@@ -646,6 +646,39 @@ try {
     ) === "failed",
     "Owner can reconcile a prior manual unknown without re-sending it",
   );
+  sql(
+    database,
+    `insert into public.agent_jobs(organization_id,lead_id,kind,status,input,attempts,created_at,started_at) select '${org}','${secondLead}','research_audit','failed','{"ai_provider":"rules","ai_model":""}',1,${clock}-interval '1 day',${clock} from generate_series(1,24);`,
+  );
+  const backlog = String(
+    sql(
+      database,
+      prefix() +
+        `select public.enqueue_agent_job('${org}','research_audit','${secondLead}','synthetic-backlog-job','{"ai_provider":"openai","ai_model":"unapproved"}');`,
+    ),
+  );
+  check(
+    String(
+      sql(
+        database,
+        prefix() +
+          `select input->>'ai_provider' from public.agent_jobs where id='${backlog}';`,
+      ),
+    ) === "rules",
+    "A direct enqueue cannot select an unapproved paid provider",
+  );
+  check(
+    JSON.parse(
+      String(
+        sql(
+          database,
+          prefix() +
+            `select coalesce(public.claim_agent_job('${org}'),'null'::jsonb);`,
+        ),
+      ),
+    ) === null,
+    "Carried-over research starts consume today's dispatch allowance",
+  );
   const csv =
     "business_name,industry,location,source_url,source_timestamp,research_priority,audit_hypothesis_not_verified\n" +
     Array.from(

@@ -30,19 +30,48 @@ export async function runNext(db: SupabaseClient<Database>, org: string) {
     const previous = Array.isArray(seen?.data)
       ? seen.data.filter((value): value is string => typeof value === "string")
       : [];
-    output = (context.job.kind === "discovery"
-      ? (context.job.input as { provider?: string })?.provider === "osm"
-        ? await discoverOpenStreetMap(context.job.input, fetch, previous)
-        : await discover(
-            context.job.input,
-            process.env.EXPLEE_API_KEY ?? "",
-            context.job.reserved_credits,
-          )
-      : context.job.kind === "research_audit"
-        ? await enhanceResearch(
-            await researchBusiness(context.business?.website ?? ""),
-            context.job.input,
-          )
+    if (context.job.kind === "research_audit") {
+      const research = await researchBusiness(context.business?.website ?? "");
+      // Website capture can take time. Recheck cancellation before starting a
+      // separate model request, including one that can incur provider charges.
+      const [current, controls] = await Promise.all([
+        db
+          .from("agent_jobs")
+          .select("status,lease_token,lease_until")
+          .eq("organization_id", org)
+          .eq("id", context.job.id)
+          .single(),
+        db
+          .from("agent_settings")
+          .select("paused")
+          .eq("organization_id", org)
+          .single(),
+      ]);
+      if (
+        current.error ||
+        controls.error ||
+        controls.data?.paused !== false ||
+        current.data?.status !== "running" ||
+        current.data.lease_token !== context.job.lease_token ||
+        !current.data.lease_until ||
+        new Date(current.data.lease_until).getTime() <= Date.now()
+      )
+        throw Error(
+          "Research was stopped or changed; no model request was made.",
+        );
+      output = (await enhanceResearch(
+        research,
+        context.job.input,
+      )) as unknown as Json;
+    } else
+      output = (context.job.kind === "discovery"
+        ? (context.job.input as { provider?: string })?.provider === "osm"
+          ? await discoverOpenStreetMap(context.job.input, fetch, previous)
+          : await discover(
+              context.job.input,
+              process.env.EXPLEE_API_KEY ?? "",
+              context.job.reserved_credits,
+            )
         : prepare(context)) as unknown as Json;
     if (Buffer.byteLength(JSON.stringify(output), "utf8") > 95000)
       throw Error(
