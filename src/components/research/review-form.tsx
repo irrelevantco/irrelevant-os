@@ -139,7 +139,9 @@ export function ApprovalForm({
         />
         <span>
           I manually approve review version {review.revision} for outreach
-          preparation. If I have separately activated an acquisition campaign, its approved template may use this review for automatic outreach. Otherwise sending needs a separate message approval.
+          preparation. If I have separately activated an acquisition campaign,
+          its approved template may use this review for automatic outreach.
+          Otherwise sending needs a separate message approval.
         </span>
       </label>
       <Feedback state={state} />

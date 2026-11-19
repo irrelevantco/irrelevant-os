@@ -226,7 +226,12 @@ export async function websiteReader(
     const result = await publicGet(canonicalUrl.href, {
       ...options,
       origin: canonical,
-      allowed: (url) => policy.isAllowed(url.href, "iRRELEVANTBot") !== false,
+      // A www alias can have a different robots policy. The robots fetch may
+      // establish that canonical origin, but page redirects must not silently
+      // reuse one origin's permission on another origin.
+      allowed: (url) =>
+        url.origin === canonical &&
+        policy.isAllowed(url.href, "iRRELEVANTBot") !== false,
     });
     if (
       result.status !== 200 ||

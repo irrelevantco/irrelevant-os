@@ -84,13 +84,34 @@ export default async function Connections({
               )}
               {google && <DisconnectGoogleForm />}
               {configured && !nativeView && (
-                <form method="post" action="/api/integrations/google/start" className="space-y-3 border-t border-border pt-4">
-                  <p className="text-xs leading-6 text-muted-foreground">The acquisition engine needs an additional Gmail read-only grant to check replies in CRM-tracked outbound threads and count sent-message IDs. It does not auto-reply to unrelated inbox mail. This permission requires new Google consent.</p>
+                <form
+                  method="post"
+                  action="/api/integrations/google/start"
+                  className="space-y-3 border-t border-border pt-4"
+                >
+                  <p className="text-xs leading-6 text-muted-foreground">
+                    The acquisition engine needs an additional Gmail read-only
+                    grant to check replies in CRM-tracked outbound threads and
+                    count sent-message IDs. It does not auto-reply to unrelated
+                    inbox mail. This permission requires new Google consent.
+                    Google’s read-only scope covers the mailbox; this engine
+                    limits message-body reads to tracked CRM conversations.
+                  </p>
                   <input type="hidden" name="mailbox" value="on" />
-                  <Button variant="outline" type="submit">{google?.scopes.includes(THREAD_READ_SCOPE) ? "Renew tracked-reply permission" : "Connect Gmail replies for the engine"}</Button>
+                  <Button variant="outline" type="submit">
+                    {google?.scopes.includes(THREAD_READ_SCOPE)
+                      ? "Renew tracked-reply permission"
+                      : "Connect Gmail replies for the engine"}
+                  </Button>
                 </form>
               )}
-              {nativeView && <p className="text-xs leading-6 text-muted-foreground">For tracked replies, choose Workspace → Open Google connection in browser…, sign in to this same workspace, then select “Connect Gmail replies for the engine”.</p>}
+              {nativeView && (
+                <p className="text-xs leading-6 text-muted-foreground">
+                  For tracked replies, choose Workspace → Open Google connection
+                  in browser…, sign in to this same workspace, then select
+                  “Connect Gmail replies for the engine”.
+                </p>
+              )}
             </>
           )}
           <Link

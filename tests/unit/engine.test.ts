@@ -107,6 +107,34 @@ describe("public research boundaries", () => {
     await expect(read("https://example.org/")).rejects.toThrow(/robots/);
     expect(fetched).toEqual(["/robots.txt", "/"]);
   });
+  it("does not reuse one origin's robots permission on a www alias redirect", async () => {
+    const fetched: string[] = [];
+    const read = await websiteReader("https://example.org", {
+      resolver,
+      wait: async () => {},
+      transport: async (url) => {
+        fetched.push(url.href);
+        return url.pathname === "/robots.txt"
+          ? {
+              url: url.href,
+              status: 200,
+              headers: {},
+              body: "User-agent: *\nAllow: /",
+            }
+          : {
+              url: url.href,
+              status: 302,
+              headers: { location: "https://www.example.org/private" },
+              body: "",
+            };
+      },
+    });
+    await expect(read("https://example.org/")).rejects.toThrow(/robots/);
+    expect(fetched).toEqual([
+      "https://example.org/robots.txt",
+      "https://example.org/",
+    ]);
+  });
   it("honors robots denial, crawl delays and the three-page ceiling", async () => {
     const wait = vi.fn(async () => {}),
       transport = vi.fn<PublicTransport>(async (url: URL) => ({

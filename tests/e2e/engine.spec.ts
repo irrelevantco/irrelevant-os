@@ -57,7 +57,7 @@ test("engine controls, inactive campaign and private inventory report", async ({
   expect(data.account).toBe(email);
   expect(data.inventory.active_leads).toBe(0);
   expect(JSON.stringify(data)).not.toMatch(
-    /access_token|refresh_token|publishable_key|password/,
+    /"(?:access_token|refresh_token|publishable_key|password|client_secret|ciphertext)"\s*:/,
   );
   expect(
     await page

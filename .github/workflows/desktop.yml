@@ -59,8 +59,16 @@ jobs:
         timeout-minutes: 8
         run: node tests/desktop/installer.mjs
       - name: Check free provider connectivity (one bounded lookup, no import)
+        id: free_provider
         if: steps.prepare.outputs.skip != 'true'
+        continue-on-error: true
         run: node --import tsx scripts/verify-free-discovery.ts
+      - name: Record temporary discovery unavailability
+        if: steps.prepare.outputs.skip != 'true' && steps.free_provider.outcome == 'failure'
+        shell: pwsh
+        run: |
+          Write-Output '::warning::Community discovery is currently unavailable. CSV import and local research remain available; no provider request was retried.'
+          Add-Content -Path 'work/desktop-release-notes.md' -Value "`nThe bounded community discovery probe did not complete for this release. Provider availability is not guaranteed; use CSV Imports if discovery is unavailable. No automatic provider retry occurred."
       - uses: actions/upload-artifact@v4
         if: steps.prepare.outputs.skip != 'true'
         with:

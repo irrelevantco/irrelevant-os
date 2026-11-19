@@ -24,23 +24,37 @@ test("1205-lead vertical pipeline, context menu, removal and restoration", async
   const name = (i: number) =>
     `Pipeline fixture ${run} ${String(i).padStart(3, "0")}`;
   const ids: string[] = [];
-  for (let start = 0; start < 1205; start += 12) {
-    await Promise.all(
-      Array.from({ length: Math.min(12, 1205 - start) }, async (_, n) => {
-        const i = start + n;
-        const r = await db.rpc("create_prospect", {
-          payload: {
-            organization_id: org,
-            name: name(i),
-            industry: "Synthetic services",
-            location: "Test City PA",
-            estimated_value_cents: 300000,
-          },
-        });
-        expect(r.error).toBeNull();
-        ids[i] = r.data;
-      }),
-    );
+  // Bulk fixture creation still uses the caller JWT and real RLS/triggers.
+  // Exercise create_prospect separately in CRM tests, without 1205 HTTP round trips.
+  for (let start = 0; start < 1205; start += 100) {
+    const businesses = await db
+      .from("businesses")
+      .insert(
+        Array.from({ length: Math.min(100, 1205 - start) }, (_, n) => ({
+          organization_id: org,
+          name: name(start + n),
+          industry: "Synthetic services",
+          location: "Test City PA",
+        })),
+      )
+      .select("id,name");
+    expect(businesses.error).toBeNull();
+    const leads = await db
+      .from("leads")
+      .insert(
+        businesses.data!.map((b) => ({
+          organization_id: org,
+          business_id: b.id,
+          status: "Discovered",
+          estimated_value_cents: 300000,
+        })),
+      )
+      .select("id,business_id");
+    expect(leads.error).toBeNull();
+    for (const business of businesses.data!) {
+      const index = Number(business.name.split(" ").at(-1));
+      ids[index] = leads.data!.find((l) => l.business_id === business.id)!.id;
+    }
   }
   await db.from("leads").update({ status: "Qualified" }).eq("id", ids[1]);
   await db.from("lead_notes").insert({
