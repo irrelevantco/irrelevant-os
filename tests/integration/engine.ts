@@ -648,7 +648,7 @@ try {
   );
   sql(
     database,
-    `insert into public.agent_jobs(organization_id,lead_id,kind,status,input,attempts,created_at,started_at) select '${org}','${secondLead}','research_audit','failed','{"ai_provider":"rules","ai_model":""}',1,${clock}-interval '1 day',${clock} from generate_series(1,24);`,
+    `insert into public.agent_jobs(organization_id,lead_id,kind,idempotency_key,status,input,attempts,created_at,started_at) select '${org}','${secondLead}','research_audit',gen_random_uuid()::text,'failed','{"ai_provider":"rules","ai_model":""}',1,${clock}-interval '1 day',${clock} from generate_series(1,24);`,
   );
   const backlog = String(
     sql(
