@@ -39,8 +39,8 @@ export async function loadCsv(_: CsvStage, form: FormData): Promise<CsvStage> {
       filename = "irrelevant_os_30_prospects.csv";
     } else {
       const file = form.get("file");
-      if (!(file instanceof File) || !file.size || file.size > 512 * 1024)
-        throw new Error("Choose a CSV file up to 512 KB.");
+      if (!(file instanceof File) || !file.size || file.size > 1024 * 1024)
+        throw new Error("Choose a CSV file up to 1 MB.");
       text = await file.text();
       filename = file.name.slice(0, 200);
     }
@@ -67,7 +67,7 @@ export async function previewImport(
     return { error: "Only an organization owner can import prospects." };
   let batchId: string;
   try {
-    const text = z.string().max(524288).parse(form.get("csv_text"));
+    const text = z.string().max(1048576).parse(form.get("csv_text"));
     const label = z.string().trim().min(1).max(160).parse(form.get("label"));
     const filename = z.string().max(200).parse(form.get("filename"));
     const mapping = mappingSchema.parse(
@@ -206,7 +206,7 @@ export async function approveReview(
   revalidatePath("/dashboard", "layout");
   return {
     success:
-      "Review approved and lead marked Ready for Outreach. No email was sent or approved for sending.",
+      "Review approved and lead marked Ready for Outreach. No email was sent by this action. A separately activated campaign may use a fully verified three-pillar review for automatic outreach.",
   };
 }
 export async function saveDraft(

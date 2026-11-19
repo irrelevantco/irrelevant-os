@@ -28,6 +28,10 @@ export const importRowSchema = z.object({
   research_priority: z.enum(["", "A", "B", "C"]),
   audit_hypothesis_not_verified: z.string().trim().max(2000),
   source_type: z.string().trim().max(160),
+  source_url: urlSchema.default(""),
+  source_timestamp: z
+    .union([z.iso.datetime({ offset: true }), z.literal("")])
+    .default(""),
   decision_maker: z.string().trim().max(160),
   notes: z.string().trim().max(2000),
   verified_digital_issue: z.string().trim().max(2000),
@@ -72,8 +76,8 @@ export function parseCsv(text: string): {
   headers: string[];
   records: Record<string, string>[];
 } {
-  if (Buffer.byteLength(text, "utf8") > 512 * 1024)
-    throw new Error("CSV must be at most 512 KB.");
+  if (Buffer.byteLength(text, "utf8") > 1024 * 1024)
+    throw new Error("CSV must be at most 1 MB.");
   const rows = parse(text, {
     bom: true,
     skip_empty_lines: true,
@@ -90,8 +94,8 @@ export function parseCsv(text: string): {
     throw new Error(
       "CSV headers must be unique, nonempty, and limited to 40 columns.",
     );
-  if (rows.length > 500 || !rows.length)
-    throw new Error("Import between 1 and 500 rows per batch.");
+  if (rows.length > 2000 || !rows.length)
+    throw new Error("Import between 1 and 2,000 rows per batch.");
   return {
     headers,
     records: rows.map((row) =>

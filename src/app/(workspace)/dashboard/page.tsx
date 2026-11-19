@@ -11,6 +11,7 @@ import { PageHeading } from "@/components/page-heading";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { LeadsTable } from "@/components/leads-table";
+import { InventoryCard } from "@/components/engine/inventory";
 export const metadata = { title: "Overview" };
 export default async function Dashboard() {
   const [summary, recent, due] = await Promise.all([
@@ -59,6 +60,7 @@ export default async function Dashboard() {
           sales: salesMetrics,
         }}
       />
+      <InventoryCard />
       <div className="mb-7 grid gap-5 xl:grid-cols-[1.7fr_1fr]">
         <Card>
           <div className="flex items-center justify-between border-b border-border px-5 py-5">

@@ -19,7 +19,15 @@ export default async function WorkspaceLayout({
           payload: { metrics_only: true },
         })
       : null;
+  const engine =
+    role === "owner"
+      ? await db.rpc("engine_control", {
+          org: organization.id,
+          payload: { op: "policy_status" },
+        })
+      : null;
   const automaticEnabled =
+    (engine?.data as { enabled?: boolean } | null)?.enabled === true ||
     (automatic?.data as { settings?: { enabled?: boolean } } | null)?.settings
       ?.enabled === true;
   return (

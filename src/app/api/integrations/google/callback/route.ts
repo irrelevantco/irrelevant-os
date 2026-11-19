@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
       org: string;
       user: string;
       expires: number;
+      mailbox?: boolean;
     }>(raw, "google-oauth-state");
     if (
       state.expires < Date.now() ||
@@ -45,6 +46,7 @@ export async function GET(request: NextRequest) {
       code,
       state.verifier,
       redirectUri(origin),
+      state.mailbox === true,
     );
     response.headers.set(
       "Location",

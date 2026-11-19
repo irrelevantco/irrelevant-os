@@ -8,6 +8,7 @@ import { DatabaseUpdate } from "@/components/database-update";
 import { PageHeading } from "@/components/page-heading";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { THREAD_READ_SCOPE } from "@/lib/engine/contracts";
 import {
   AutomationForm,
   DisconnectGoogleForm,
@@ -47,7 +48,7 @@ export default async function Connections({
               : "Not connected. No Gmail sends or Google events are active."}{" "}
             Requested permissions: verified account email, send Gmail, check
             calendar availability, and manage events on calendars you own. No
-            mailbox-reading permission is requested.
+            mailbox-reading permission is included in the basic connection.
           </p>
           {query.google && (
             <p role="status" className="text-sm text-primary">
@@ -82,6 +83,14 @@ export default async function Connections({
                 </div>
               )}
               {google && <DisconnectGoogleForm />}
+              {configured && !nativeView && (
+                <form method="post" action="/api/integrations/google/start" className="space-y-3 border-t border-border pt-4">
+                  <p className="text-xs leading-6 text-muted-foreground">The acquisition engine needs an additional Gmail read-only grant to check replies in CRM-tracked outbound threads and count sent-message IDs. It does not auto-reply to unrelated inbox mail. This permission requires new Google consent.</p>
+                  <input type="hidden" name="mailbox" value="on" />
+                  <Button variant="outline" type="submit">{google?.scopes.includes(THREAD_READ_SCOPE) ? "Renew tracked-reply permission" : "Connect Gmail replies for the engine"}</Button>
+                </form>
+              )}
+              {nativeView && <p className="text-xs leading-6 text-muted-foreground">For tracked replies, choose Workspace → Open Google connection in browser…, sign in to this same workspace, then select “Connect Gmail replies for the engine”.</p>}
             </>
           )}
           <Link

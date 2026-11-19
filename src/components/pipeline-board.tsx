@@ -1,29 +1,82 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowUpRight, ChevronDown } from "lucide-react";
 import { type PipelineStatus } from "@/lib/domain";
-import { pipelineGroups, stagePage, type PipelineLead } from "@/lib/pipeline";
+import { pipelinePageSchema, type PipelinePage } from "@/lib/pipeline";
 import { money } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { Input, Select } from "./ui/input";
 import { LeadItem, LeadMenuButton } from "./lead-actions";
 
 export function PipelineBoard({
-  leads,
-  totals,
+  initial,
   canDelete,
 }: {
-  leads: PipelineLead[];
-  totals: Record<string, number>;
+  initial: PipelinePage;
   canDelete: boolean;
 }) {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initial.query);
+  const [data, setData] = useState(initial);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const root = useRef<HTMLDivElement>(null);
-  const groups = pipelineGroups(leads, query);
-  const first = groups.find((g) => g.leads.length)?.status;
-  const matches = groups.reduce((sum, group) => sum + group.leads.length, 0);
+  const pending = useRef<AbortController | null>(null);
+  const searched = useRef(initial.query);
+  const load = useCallback(async (search: string, stage?: string, page = 1) => {
+    pending.current?.abort();
+    const controller = new AbortController();
+    pending.current = controller;
+    setLoading(true);
+    setError("");
+    try {
+      const params = new URLSearchParams({
+        query: search,
+        page: String(page),
+        ...(stage ? { stage } : {}),
+      });
+      const response = await fetch(`/api/pipeline?${params}`, {
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      if (!response.ok) throw Error();
+      const next = pipelinePageSchema.parse(await response.json());
+      if (controller.signal.aborted) return;
+      setData((old) =>
+        stage && old.query === next.query
+          ? {
+              ...next,
+              groups: old.groups.map((g) =>
+                g.status === stage
+                  ? next.groups.find((n) => n.status === stage)!
+                  : g,
+              ),
+            }
+          : next,
+      );
+    } catch {
+      if (!controller.signal.aborted)
+        setError(
+          "Pipeline refresh failed. The displayed leads are retained; try again.",
+        );
+    } finally {
+      if (!controller.signal.aborted) setLoading(false);
+    }
+  }, []);
+  useEffect(() => {
+    if (query === searched.current) return;
+    const timer = setTimeout(() => {
+      searched.current = query;
+      void load(query);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query, load]);
+  useEffect(() => () => pending.current?.abort(), []);
+  const groups = data.groups;
+  const first = groups.find((g) => g.count)?.status;
+  const totals = Object.fromEntries(groups.map((g) => [g.status, g.count]));
+  const matches = data.total;
   function toggleAll(expand: boolean) {
     root.current
       ?.querySelectorAll<HTMLDetailsElement>("details[data-stage]")
@@ -86,8 +139,8 @@ export function PipelineBoard({
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
           <p role="status">
             {query
-              ? `${matches} matching leads in the loaded pipeline`
-              : `${leads.length} loaded leads · 12 cards per stage page`}
+              ? `${matches} matching leads across the full workspace`
+              : `${initial.total} active leads · 12 cards per stage page`}
           </p>
           <div className="flex gap-3">
             <button
@@ -107,6 +160,19 @@ export function PipelineBoard({
           </div>
         </div>
       </div>
+      {loading && (
+        <p role="status" className="text-sm text-muted-foreground">
+          Refreshing the full pipeline…
+        </p>
+      )}
+      {error && (
+        <div role="alert" className="text-sm text-red-300">
+          {error}{" "}
+          <button className="underline" onClick={() => void load(query)}>
+            Retry
+          </button>
+        </div>
+      )}
       {query && matches === 0 && (
         <p className="py-4 text-sm text-muted-foreground">
           No leads match this search.
@@ -117,8 +183,9 @@ export function PipelineBoard({
           key={`${group.status}:${query}`}
           status={group.status}
           index={index}
-          leads={group.leads}
-          total={totals[group.status] ?? 0}
+          group={group}
+          loading={loading}
+          onPage={(page) => void load(query, group.status, page)}
           defaultOpen={group.status === first}
           canDelete={canDelete}
           searching={!!query}
@@ -131,27 +198,35 @@ export function PipelineBoard({
 function Stage({
   status,
   index,
-  leads,
-  total,
+  group,
+  loading,
+  onPage,
   defaultOpen,
   canDelete,
   searching,
 }: {
   status: PipelineStatus;
   index: number;
-  leads: PipelineLead[];
-  total: number;
+  group: PipelinePage["groups"][number];
+  loading: boolean;
+  onPage: (page: number) => void;
   defaultOpen: boolean;
   canDelete: boolean;
   searching: boolean;
 }) {
   const [expanded, setExpanded] = useState(defaultOpen);
-  const [requested, setPage] = useState(1);
-  const current = stagePage(leads, requested);
+  const leads = group.leads,
+    total = group.count;
+  const current = {
+    items: leads,
+    page: group.page,
+    pages: group.pages,
+    start: (group.page - 1) * 12,
+  };
   return (
     <details
       data-stage={index}
-      data-count={leads.length}
+      data-count={total}
       open={expanded}
       onToggle={(e) => setExpanded(e.currentTarget.open)}
       className="group/stage scroll-mt-52 min-w-0 rounded-lg border border-border bg-card/70 sm:scroll-mt-36"
@@ -164,7 +239,7 @@ function Stage({
           {status}
         </h2>
         <span className="shrink-0 rounded bg-secondary px-2 py-1 text-xs tabular-nums text-muted-foreground">
-          {searching ? `${leads.length} match` : total}
+          {searching ? `${total} match` : total}
         </span>
         <ChevronDown
           aria-hidden="true"
@@ -223,18 +298,15 @@ function Stage({
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
               <p>
                 Showing {current.start + 1}–
-                {current.start + current.items.length} of {leads.length}
-                {!searching && total > leads.length
-                  ? ` loaded (${total} total in stage)`
-                  : ""}
+                {current.start + current.items.length} of {total}
               </p>
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={current.page === 1}
+                  disabled={loading || current.page === 1}
                   aria-label={`Previous ${status} leads`}
-                  onClick={() => setPage(current.page - 1)}
+                  onClick={() => onPage(current.page - 1)}
                 >
                   ← Previous
                 </Button>
@@ -244,9 +316,9 @@ function Stage({
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={current.page === current.pages}
+                  disabled={loading || current.page === current.pages}
                   aria-label={`Next ${status} leads`}
-                  onClick={() => setPage(current.page + 1)}
+                  onClick={() => onPage(current.page + 1)}
                 >
                   Next →
                 </Button>
@@ -257,7 +329,7 @@ function Stage({
           <p className="py-5 text-center text-xs text-muted-foreground">
             {searching
               ? "No matching leads in this stage."
-              : "No loaded leads in this stage."}
+              : "No leads in this stage."}
           </p>
         )}
       </div>

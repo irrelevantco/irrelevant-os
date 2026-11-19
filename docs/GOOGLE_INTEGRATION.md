@@ -1,4 +1,4 @@
-# Google connection — personal preview 0.3.0
+# Google connection and acquisition policies
 
 The OAuth, encrypted credential store, exact-message Gmail delivery and owned-calendar adapters are implemented. No Google Cloud project/client has been created in this session; Google Cloud sign-in was not completed. Live Gmail sending and Calendar writes have **not** been verified or activated. Provider transport tests use synthetic responses and never send a message or invitation.
 
@@ -6,7 +6,7 @@ The OAuth, encrypted credential store, exact-message Gmail delivery and owned-ca
 
 Use an account you control in Google Cloud Console. Create/select a project and enable **Gmail API** and **Google Calendar API**. This app does not provision paid Google services. Configure Google Auth Platform branding/audience and a contact email you control. For personal testing, add `contact.irrelevantcollective@gmail.com` as a test user. External testing refresh tokens can expire after seven days; expect reconnection. Production use and additional users may require Google's verification and appropriate published privacy information.
 
-The implemented permissions are `openid`, `email`, `gmail.send`, `calendar.freebusy`, and `calendar.events.owned` (Google API scopes use the full `https://www.googleapis.com/auth/` prefix). They identify the verified account, send approved mail, check availability and create/reconcile events on owned calendars. Mailbox reading, reply synchronization and Gmail-native drafts are not included. Google login for the CRM is separate from this capability connection.
+The implemented permissions are `openid`, `email`, `gmail.send`, `calendar.freebusy`, and `calendar.events.owned` (Google API scopes use the full `https://www.googleapis.com/auth/` prefix). They identify the verified account, send approved mail, check availability and create/reconcile events on owned calendars. Optional engine consent adds gmail.readonly for tracked reply synchronization. Gmail-native drafts are not included; drafts live in the CRM. Google login for the CRM is separate from this capability connection.
 
 ### Windows bundled application
 
@@ -37,16 +37,22 @@ Version 0.3.1 adds **Why email approval is locked** above the approval form. Eac
 
 Google consent must be completed while signed into the same CRM account and organization as the Windows app. A connection saved under another account/workspace cannot unlock this one. The native app and system browser have separate CRM cookie sessions even on the same PC. No source-backed observation should be marked verified just to unlock a test send.
 
-Replies and opt-outs currently require manual logging in the CRM before further outreach. This app has no mailbox-reading grant. Hourly discovery does not send messages or automatically accept draft proposals.
+Without optional engine reply-reading consent, replies/opt-outs still require manual logging. Legacy hourly discovery does not send messages. The optional engine may use a separately approved seven-day policy as documented below.
 
 ## Agreed calls and meetings
 
 Record an actual agreement, future Eastern date/time, 15–120 minute duration and optional manual opportunity estimate in Calls & meetings. SQL enforces Monday–Friday, 7 a.m.–3 p.m. Eastern, and prevents overlapping local appointments. The entire duration must fit. An agreement creates a CRM appointment, not a Google event or a phone call.
 
-A separate approval creates/reconciles the primary Google Calendar event after checking availability. A deterministic provider event ID prevents duplicate events. By default no guest is invited; the owner must explicitly approve the public contact as a guest and acknowledge their agreement before notifications are requested. Reconciling an existing event does not send a new invitation. Externally linked/uncertain appointments can be cancelled through a separate approved cancellation, which checks the deterministic event first and updates local value only after Google confirms cancellation. Rescheduling and automatic external-change/reply sync remain future work.
+A separate approval creates/reconciles the primary Google Calendar event after checking availability. A deterministic provider event ID prevents duplicate events. By default no guest is invited; the owner must explicitly approve the public contact as a guest and acknowledge their agreement before notifications are requested. Reconciling an existing event does not send a new invitation. Externally linked/uncertain appointments can be cancelled through a separate approved cancellation, which checks the deterministic event first and updates local value only after Google confirms cancellation. Rescheduling and automatic external Calendar-change sync remain future work. Engine reply-driven selection is described below.
 
 ## Security and verification
 
 Credentials use AES-256-GCM, random nonces, versioned envelopes and authenticated context. Only owner-authenticated RPCs access the private encrypted store. No service-role client, anonymous worker, browser token exposure or persistent worker password is introduced. Lifecycle audit entries contain field names, never token values. OAuth uses encrypted HttpOnly SameSite cookies, expiry, owner/organization binding, state, PKCE and fixed Google endpoints. Keep the application owner-private while production hardening and Google verification are pending.
 
 Sources: [Google web OAuth](https://developers.google.com/identity/protocols/oauth2/web-server), [Gmail scopes](https://developers.google.com/workspace/gmail/api/auth/scopes), [Calendar event creation](https://developers.google.com/workspace/calendar/api/v3/reference/events/insert).
+
+## Engine reply-reading extension
+
+Connections now offers a separate **Connect Gmail replies for the engine** consent path that adds gmail.readonly to existing scopes. Existing sending tokens are preserved but cannot read replies until reauthorized. This scope is mailbox-wide in Google's permission model; the implementation reads sent IDs/history and bodies only for actual tracked outbound threads, not arbitrary inbox messages. Automatic actions require exact current contact/thread and aligned trusted Google DMARC headers. Opt-outs suppress and cancel work. Optional meeting policies still require Calendar scopes; an authenticated recipient must select an actually sent offered time, and availability is rechecked.
+
+Engine sending is separately authorized by an expiring seven-day template/identity/quota policy after all three review pillars are manually verified and owner-approved. The old exact-message route remains. Unknown outcomes are never retried; owners can reconcile them after checking Gmail. Read ACQUISITION_ENGINE.md before activation. Testing scope and consent configuration in Google's console remain operator tasks; ChatGPT Google connections do not authorize this application.

@@ -15,7 +15,14 @@ const responseSchema = z.object({
 });
 export function buildOverpassQuery(input: unknown, scanCount?: number) {
   const query = freeDiscoverySchema.parse(input);
-  return `[out:json][timeout:20][maxsize:33554432];\narea["ISO3166-2"=${JSON.stringify(`US-${query.state}`)}]->.state;\nrel(area.state)["boundary"="administrative"]["admin_level"="8"]["name"=${JSON.stringify(query.city)}];\nmap_to_area->.city;\nnwr(area.city)["craft"=${JSON.stringify(query.category)}]["name"];\nout tags ${scanCount ?? query.count};`;
+  const key = ["cafe", "restaurant"].includes(query.category)
+    ? "amenity"
+    : ["bakery", "hairdresser", "beauty"].includes(query.category)
+      ? "shop"
+      : "craft";
+  const escaped = query.city.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const names = `^((City|Town|Village|Borough|Township) of )?${escaped}( Township| Borough)?$`;
+  return `[out:json][timeout:20][maxsize:33554432];\narea["ISO3166-2"=${JSON.stringify(`US-${query.state}`)}]->.state;\nrel(area.state)["boundary"="administrative"]["admin_level"~"^[789]$"]["name"~${JSON.stringify(names)},i];\nmap_to_area->.city;\nnwr(area.city)[${JSON.stringify(key)}=${JSON.stringify(query.category)}]["name"];\nout tags ${scanCount ?? query.count};`;
 }
 function publicWebsite(value: string | undefined) {
   if (!value) return "";
@@ -23,6 +30,12 @@ function publicWebsite(value: string | undefined) {
     const url = new URL(
       /^https?:\/\//i.test(value) ? value : `https://${value}`,
     );
+    if (
+      /(^|\.)(facebook\.com|instagram\.com|linkedin\.com|linktr\.ee|booksy\.com|vagaro\.com|fresha\.com)$/.test(
+        url.hostname,
+      )
+    )
+      return "";
     return ["http:", "https:"].includes(url.protocol) &&
       !url.username &&
       !url.password &&
@@ -122,6 +135,10 @@ export async function discoverOpenStreetMap(
         public_phone: phone.length <= 40 ? phone : "",
         source_type: `OpenStreetMap contributors; ODbL 1.0; ${source}`,
         source_url: source,
+        source_timestamp: new Date().toISOString(),
+        notes: publicWebsite(t["contact:website"] ?? t.website)
+          ? ""
+          : `Listed website / profile, not independently verified: ${(t["contact:website"] ?? t.website ?? "").slice(0, 1500)}`,
         research_priority: "C",
         audit_hypothesis_not_verified:
           "Public map listing only. Verify the business, contacts, service fit and digital presence; no weakness or budget is confirmed.",

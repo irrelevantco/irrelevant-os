@@ -51,3 +51,9 @@ Implemented: explicit owner resume without changing paid limits, bounded free ma
 ## Acquisition preview 0.3.0
 
 Implemented locally: opt-in hourly category targets, native authenticated desktop heartbeat, automatic import previews, future agreed appointments with overlap/business-hour checks, unique-lead opportunity valuation and ten-second polling. Google OAuth/encryption/send/Calendar adapters and approval controls are implemented with synthetic provider tests; creating the real Google project/client, consent and live activation remain blocked on sign-in/setup. Phone hosting is pending the Render connection and hosted schema/account verification. Always-on hosted processing, automatic reply/opt-out synchronization and autonomous meeting negotiation are not included.
+
+## Current personal acquisition engine
+
+Implemented: full-dataset pipeline pagination/search, regional 13-category free discovery, 2,000-row CSV capacity/provenance, A/B/C bounded public-web research, optional local Ollama/OpenAI recommendation adapters, manual three-pillar verification, seven-day policy-controlled templates, tracked reply/opt-out synchronization, bounded follow-ups and explicit offered-time appointment selection. See ACQUISITION_ENGINE.md for actual limits and setup; older milestone sections describe historical scope. No live campaign is enabled automatically.
+
+Next acceptance work: owner validates real contacts/research and a small campaign in the Windows app, reviews conversion/deliverability evidence, reconciles the actual 311-lead database, then decides whether commercial OAuth verification, reliable hosted workers and backups justify investment. Fully autonomous negotiation/closing, payroll execution, ADP/Kronos migration connectors, signed-contract workflows, payment processing and client fulfillment are not implemented. Prospect quantity and pricing remain goals, not proven client acquisition results.

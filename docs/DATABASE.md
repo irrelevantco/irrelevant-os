@@ -60,3 +60,9 @@ The existing hosted Phase 1 + Batch schema was upgraded using `docs/deployment/H
 ### Recoverable lead removal
 
 Migration `20261118153305_lead_trash.sql` adds nullable deletion markers and partial active/trash indexes without modifying existing leads. The organization owner uses `change_lead_trash(org, lead, restore, expected_updated_at)`; `list_lead_trash(org, page)` returns 25 removed identities at a time. Private functions recheck `auth.uid()` and database ownership, use an empty search path, and deny anonymous execution. Active queries use RLS to exclude Trash; historical import counts and retained notes/audit/contact/suppression records are not erased. This feature is not a personal-data purge or permanent business deletion.
+
+## Acquisition engine migration
+
+`20261118191851_acquisition_engine.sql` is additive and does not reset existing records. New RLS tables: engine_settings, engine_coverage, engine_mail_threads, engine_mail_cursors, engine_replies, engine_offers and engine_outbox. All direct writes are denied to application roles; owner-scoped engine_control operations serialize with the existing agent advisory lock. Public pipeline_page and inventory_summary retain caller RLS. The engine uses existing agent_jobs, email_deliveries, contact_events, growth reviews and sales_meetings rather than parallel CRM identities.
+
+CSV preview capacity becomes 2,000 rows, with commit-time identity checks and original source_url/source_observed_at preservation. Domain and normalized name/location lookup indexes support larger batches. Current evidence/sender/policy revisions are checked again at delivery claim. Existing manual messages retain their five/day workflow while all attempts share a 500 rolling-24-hour fixed-sender ceiling. Migration tests use disposable databases and retain prior-row values; no user Windows database is accessed by cloud tests.

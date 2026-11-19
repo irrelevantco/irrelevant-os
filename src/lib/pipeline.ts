@@ -1,5 +1,39 @@
 import { STATUSES, type PipelineStatus } from "./domain";
 import type { Lead } from "./data";
+import { z } from "zod";
+
+export const pipelinePageSchema = z.object({
+  query: z.string(),
+  total: z.number().int().nonnegative(),
+  groups: z
+    .array(
+      z.object({
+        status: z.enum(STATUSES),
+        count: z.number().int().nonnegative(),
+        page: z.number().int().positive(),
+        pages: z.number().int().positive(),
+        leads: z
+          .array(
+            z.object({
+              id: z.uuid(),
+              status: z.enum(STATUSES),
+              updated_at: z.string(),
+              estimated_value_cents: z.number().nullable(),
+              next_follow_up: z.string().nullable(),
+              research_priority: z.enum(["A", "B", "C"]).nullable(),
+              business: z.object({
+                name: z.string(),
+                industry: z.string(),
+                location: z.string(),
+              }),
+            }),
+          )
+          .max(12),
+      }),
+    )
+    .length(STATUSES.length),
+});
+export type PipelinePage = z.infer<typeof pipelinePageSchema>;
 
 export type PipelineLead = Pick<
   Lead,

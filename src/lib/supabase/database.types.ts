@@ -778,6 +778,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      engine_state: { Args: { org: string; payload?: Json }; Returns: Json }
+      engine_control: { Args: { org: string; payload: Json }; Returns: Json }
+      pipeline_page: { Args: { org: string; payload?: Json }; Returns: Json }
+      inventory_summary: { Args: { org: string }; Returns: Json }
       change_lead_trash: {
         Args: { org: string; lead: string; restore: boolean; expected_updated_at: string }
         Returns: string

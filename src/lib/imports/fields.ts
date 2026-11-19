@@ -7,6 +7,8 @@ export const IMPORT_FIELDS = [
   "research_priority",
   "audit_hypothesis_not_verified",
   "source_type",
+  "source_url",
+  "source_timestamp",
   "contact_email",
   "decision_maker",
   "notes",

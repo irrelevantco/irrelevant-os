@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
 import { assertLocalTestEnvironment } from "../integration/local-guard";
 
-test("387-lead vertical pipeline, context menu, removal and restoration", async ({
+test("1205-lead vertical pipeline, context menu, removal and restoration", async ({
   page,
 }, info) => {
   test.setTimeout(180000);
@@ -24,9 +24,9 @@ test("387-lead vertical pipeline, context menu, removal and restoration", async 
   const name = (i: number) =>
     `Pipeline fixture ${run} ${String(i).padStart(3, "0")}`;
   const ids: string[] = [];
-  for (let start = 0; start < 387; start += 12) {
+  for (let start = 0; start < 1205; start += 12) {
     await Promise.all(
-      Array.from({ length: Math.min(12, 387 - start) }, async (_, n) => {
+      Array.from({ length: Math.min(12, 1205 - start) }, async (_, n) => {
         const i = start + n;
         const r = await db.rpc("create_prospect", {
           payload: {
@@ -57,7 +57,7 @@ test("387-lead vertical pipeline, context menu, removal and restoration", async 
   await expect(page).toHaveURL(/\/dashboard$/);
   await page.goto("/dashboard/pipeline");
   await expect(
-    page.getByText("387 loaded leads · 12 cards per stage page"),
+    page.getByText("1205 active leads · 12 cards per stage page"),
   ).toBeVisible();
   const board = page.getByRole("region", { name: "Pipeline board" });
   const discovered = board.locator('details[data-stage="0"]');
@@ -66,7 +66,7 @@ test("387-lead vertical pipeline, context menu, removal and restoration", async 
     .getByRole("button", { name: "Next Discovered leads", exact: true })
     .click();
   await expect(
-    discovered.getByText("Showing 13–24 of 386", { exact: true }),
+    discovered.getByText("Showing 13–24 of 1204", { exact: true }),
   ).toBeVisible();
   const layout = await board.evaluate((el) => ({
     boardWidth: el.clientWidth,
@@ -130,7 +130,7 @@ test("387-lead vertical pipeline, context menu, removal and restoration", async 
   await expect(page).toHaveURL(/\/dashboard\/pipeline\?removed=1$/);
   await page.getByLabel("Search pipeline").fill("");
   await expect(
-    page.getByText("386 loaded leads · 12 cards per stage page"),
+    page.getByText("1204 active leads · 12 cards per stage page"),
   ).toBeVisible();
   expect(
     (await db.from("leads").select("id").eq("id", ids[0])).data,
@@ -144,7 +144,7 @@ test("387-lead vertical pipeline, context menu, removal and restoration", async 
   ).toBeVisible();
   await page.getByRole("button", { name: "Restore lead", exact: true }).click();
   await expect(page.getByText("Trash is empty.")).toBeVisible();
-  expect((await db.rpc("crm_summary", { org })).data.total).toBe(387);
+  expect((await db.rpc("crm_summary", { org })).data.total).toBe(1205);
   await page.goto(`/dashboard/leads?q=${encodeURIComponent(name(0))}`);
   const row = page.getByRole("row").filter({ hasText: name(0) });
   await row.getByRole("link").first().focus();
@@ -166,6 +166,6 @@ test("387-lead vertical pipeline, context menu, removal and restoration", async 
     .getByRole("button", { name: "Move to Trash", exact: true })
     .click();
   await expect(page).toHaveURL(/\/dashboard\/leads\?removed=1$/);
-  expect((await db.rpc("crm_summary", { org })).data.total).toBe(386);
+  expect((await db.rpc("crm_summary", { org })).data.total).toBe(1204);
   expect(errors).toEqual([]);
 });

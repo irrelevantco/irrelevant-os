@@ -118,6 +118,7 @@ try {
         "20261117221021",
         "20261117231231",
         "20261118153305",
+        "20261118191851",
       ]),
     "Applied precisely the missing migrations",
   );
@@ -135,8 +136,8 @@ try {
   check(
     sql(
       dbName,
-      "select count(*) from pg_tables where schemaname='public' and rowsecurity;",
-    ) === "18",
+      "select count(*) from pg_tables where schemaname='public' and not rowsecurity;",
+    ) === "0",
     "All application tables retain RLS",
   );
   check(

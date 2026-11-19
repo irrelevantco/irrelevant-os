@@ -5,6 +5,7 @@ import { randomBytes, createHash } from "node:crypto";
 import { seal } from "@/lib/acquisition/crypto";
 import { GOOGLE_SCOPES } from "@/lib/acquisition/google-http";
 import { googleConfigured, redirectUri } from "@/lib/acquisition/google";
+import { THREAD_READ_SCOPE } from "@/lib/engine/contracts";
 export async function POST(request: Request) {
   const origin = appOrigin(request);
   if (request.headers.get("origin") !== origin)
@@ -17,12 +18,15 @@ export async function POST(request: Request) {
     );
   const state = randomBytes(32).toString("base64url"),
     verifier = randomBytes(48).toString("base64url");
+  const mailbox = (await request.formData()).get("mailbox") === "on";
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   url.search = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID!,
     redirect_uri: redirectUri(origin),
     response_type: "code",
-    scope: GOOGLE_SCOPES.join(" "),
+    scope: [...GOOGLE_SCOPES, ...(mailbox ? [THREAD_READ_SCOPE] : [])].join(
+      " ",
+    ),
     access_type: "offline",
     prompt: "consent",
     include_granted_scopes: "true",
@@ -41,6 +45,7 @@ export async function POST(request: Request) {
         org: organization.id,
         user: user.id,
         expires: Date.now() + 600000,
+        mailbox,
       },
       "google-oauth-state",
     ),

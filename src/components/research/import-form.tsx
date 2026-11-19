@@ -43,7 +43,7 @@ export function CsvImportForm() {
       <form action={action} className="space-y-4">
         <Field
           label="CSV file"
-          hint="UTF-8 CSV, up to 512 KB and 500 rows. Column mapping and a saved preview come next."
+          hint="UTF-8 CSV, up to 1 MB and 2,000 rows. Column mapping and a saved preview come next."
         >
           <Input name="file" type="file" accept=".csv,text/csv" />
         </Field>

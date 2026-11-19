@@ -78,9 +78,9 @@ describe("CSV parsing and mapping", () => {
   );
   it("enforces row and byte limits", () => {
     expect(() =>
-      parseCsv("name\n" + Array(501).fill("Example").join("\n")),
+      parseCsv("name\n" + Array(2001).fill("Example").join("\n")),
     ).toThrow();
-    expect(() => parseCsv("name\n" + "x".repeat(524289))).toThrow();
+    expect(() => parseCsv("name\n" + "x".repeat(1048577))).toThrow();
   });
   it("loads all 30 supplied records without converting hypotheses into findings", () => {
     const p = parseCsv(

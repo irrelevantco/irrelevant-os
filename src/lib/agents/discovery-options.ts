@@ -7,6 +7,12 @@ export const FREE_CATEGORIES = {
   electrician: "Electrical services",
   gardener: "Landscaping",
   builder: "General contractor",
+  bakery: "Bakery",
+  cafe: "Coffee shop / cafe",
+  restaurant: "Restaurant / food service",
+  caterer: "Catering",
+  hairdresser: "Salon / hair care",
+  beauty: "Beauty services",
 } as const;
 export const US_STATES =
   "AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY DC".split(
@@ -22,6 +28,12 @@ export const freeDiscoverySchema = z.object({
     "electrician",
     "gardener",
     "builder",
+    "bakery",
+    "cafe",
+    "restaurant",
+    "caterer",
+    "hairdresser",
+    "beauty",
   ]),
   city: z
     .string()

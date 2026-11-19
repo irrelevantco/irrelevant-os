@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   output: "standalone",
-  experimental: { serverActions: { bodySizeLimit: "2mb" } },
+  experimental: { serverActions: { bodySizeLimit: "4mb" } },
   outputFileTracingIncludes: { "/*": ["./data/imports/*.csv"] },
   async headers() {
     return [

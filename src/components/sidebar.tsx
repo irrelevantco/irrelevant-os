@@ -32,6 +32,7 @@ const items = [
   { href: "/dashboard/research", label: "Research", icon: NotebookPen },
   { href: "/dashboard/outreach", label: "Outreach drafts", icon: Mail },
   { href: "/dashboard/agents", label: "Agent control", icon: Workflow },
+  { href: "/dashboard/engine", label: "Acquisition engine", icon: Activity },
   {
     href: "/dashboard/schedule",
     label: "Calls & meetings",

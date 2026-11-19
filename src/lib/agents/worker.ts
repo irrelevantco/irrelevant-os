@@ -6,6 +6,9 @@ import { claimedJobSchema } from "./contracts";
 import { prepare } from "./prepare";
 import { discoverOpenStreetMap } from "./openstreetmap";
 import { discover } from "./explee";
+import { researchBusiness } from "../engine/research";
+import { enhanceResearch } from "../engine/ai";
+import { engineRpc } from "../engine/rpc";
 export async function runNext(db: SupabaseClient<Database>, org: string) {
   const args = { org };
   const claim = await db.rpc("claim_agent_job", args);
@@ -35,12 +38,22 @@ export async function runNext(db: SupabaseClient<Database>, org: string) {
             process.env.EXPLEE_API_KEY ?? "",
             context.job.reserved_credits,
           )
-      : prepare(context)) as unknown as Json;
+      : context.job.kind === "research_audit"
+        ? await enhanceResearch(
+            await researchBusiness(context.business?.website ?? ""),
+            context.job.input,
+          )
+        : prepare(context)) as unknown as Json;
+    if (Buffer.byteLength(JSON.stringify(output), "utf8") > 95000)
+      throw Error(
+        "Research proposal exceeded its storage limit; review the source manually.",
+      );
   } catch (error) {
+    output = undefined;
     // Persist only controlled errors; never record provider payloads, headers or credentials.
     failure =
       error instanceof Error &&
-      /^(OpenStreetMap|Explee|Configure|Verified|Business|Insufficient)/.test(
+      /^(OpenStreetMap|Explee|Configure|Verified|Business|Insufficient|Research|Local AI)/.test(
         error.message,
       )
         ? error.message.slice(0, 500)
@@ -77,7 +90,7 @@ export async function runNext(db: SupabaseClient<Database>, org: string) {
       .single();
     if (saved.data?.status === "succeeded" && settings.data?.paused === false) {
       try {
-        await stageDiscovery(
+        const batch = await stageDiscovery(
           db,
           org,
           context.job.id,
@@ -86,6 +99,15 @@ export async function runNext(db: SupabaseClient<Database>, org: string) {
             : "explee",
           output.companies,
         );
+        if (
+          batch &&
+          context.job.idempotency_key?.startsWith("engine:discovery:")
+        ) {
+          await engineRpc(db, org, "auto_import", {
+            job_id: context.job.id,
+            batch_id: batch,
+          });
+        }
       } catch {
         return "Candidates were saved; preview staging needs review. Use Preview candidates in job history. No business records were imported.";
       }

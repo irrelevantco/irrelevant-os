@@ -125,12 +125,20 @@ export function decodeApprovalBody(encoded: string) {
     throw invalid();
   return body;
 }
-export function emailRaw(to: string, subject: string, body: string) {
+export function emailRaw(
+  to: string,
+  subject: string,
+  body: string,
+  inReplyTo?: string,
+  automaticReply = false,
+) {
   z.email().parse(to);
   if (/[\r\n]/.test(to + subject) || !subject.trim() || subject.length > 160)
     throw Error("Invalid email headers.");
+  if (inReplyTo && !/^<[^<>\r\n\s]{1,300}>$/.test(inReplyTo))
+    throw Error("Invalid email reply header.");
   return Buffer.from(
-    `From: iRRELEVANT CO <${SENDER_EMAIL}>\r\nTo: ${to}\r\nSubject: =?UTF-8?B?${Buffer.from(subject).toString("base64")}?=\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n${Buffer.from(
+    `From: iRRELEVANT CO <${SENDER_EMAIL}>\r\nTo: ${to}\r\nSubject: =?UTF-8?B?${Buffer.from(subject).toString("base64")}?=\r\n${inReplyTo ? `In-Reply-To: ${inReplyTo}\r\nReferences: ${inReplyTo}\r\n` : ""}${automaticReply ? "Auto-Submitted: auto-replied\r\nX-Auto-Response-Suppress: All\r\n" : ""}MIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n${Buffer.from(
       body,
     )
       .toString("base64")

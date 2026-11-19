@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ReviewForm, ApprovalForm } from "@/components/research/review-form";
 import { dateTime } from "@/lib/utils";
+import { randomUUID } from "node:crypto";
+import { QueueResearchForm } from "@/components/engine/forms";
 export const metadata = { title: "Three-Point Growth Review" };
 export default async function Review({
   params,
@@ -61,6 +63,24 @@ export default async function Review({
           <ReviewForm review={review} points={points} />
         </Card>
         <aside className="space-y-5">
+          {role === "owner" && (
+            <Card className="p-5">
+              <h2 className="mb-3 text-sm">Local public-web research</h2>
+              <p className="mb-4 text-xs leading-6 text-muted-foreground">
+                Save and enable the Acquisition engine first. The bot can
+                capture up to three permitted public website pages and propose
+                an unverified review. You still verify the sources and approve
+                the three pillars before campaign outreach.
+              </p>
+              <QueueResearchForm leadId={id} requestKey={randomUUID()} />
+              <Link
+                className="mt-3 block text-xs text-primary underline"
+                href="/dashboard/engine"
+              >
+                Engine controls and proposals →
+              </Link>
+            </Card>
+          )}
           <Card className="p-5">
             <h2 className="mb-4 text-base">Human approval</h2>
             {review.approved_at && (

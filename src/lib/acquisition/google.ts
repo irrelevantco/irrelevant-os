@@ -10,6 +10,7 @@ import {
   verifyGoogleAccount,
 } from "./google-http";
 import { z } from "zod";
+import { THREAD_READ_SCOPE } from "../engine/contracts";
 export function credentialKeyId() {
   return createHash("sha256").update(secretKey()).digest("hex").slice(0, 16);
 }
@@ -135,14 +136,15 @@ export async function finishConnection(
   code: string,
   verifier: string,
   redirect: string,
+  mailbox = false,
 ) {
   const next = await exchangeGoogle(code, verifier, redirect);
   await verifyGoogleAccount(next.access_token);
   const scopes = next.scope.split(" ");
   if (
-    !GOOGLE_SCOPES.filter((s) => s.startsWith("https:")).every((s) =>
-      scopes.includes(s),
-    )
+    ![...GOOGLE_SCOPES, ...(mailbox ? [THREAD_READ_SCOPE] : [])]
+      .filter((s) => s.startsWith("https:"))
+      .every((s) => scopes.includes(s))
   )
     throw Error(
       "The requested sending and Calendar permissions were not all granted.",

@@ -97,6 +97,9 @@ export function candidatesCsv(companies: Record<string, string>[]) {
     "contact_email",
     "public_phone",
     "source_type",
+    "source_url",
+    "source_timestamp",
+    "notes",
     "research_priority",
     "audit_hypothesis_not_verified",
   ];

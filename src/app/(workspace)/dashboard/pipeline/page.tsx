@@ -1,20 +1,31 @@
 import Link from "next/link";
 import { List, Plus, Trash2 } from "lucide-react";
-import { getLeads, getSummary } from "@/lib/data";
+import { pipelinePage } from "@/lib/pipeline-data";
+import { requireContext } from "@/lib/context";
 import { PageHeading } from "@/components/page-heading";
 import { PipelineBoard } from "@/components/pipeline-board";
 import { Button } from "@/components/ui/button";
+import { DatabaseUpdate } from "@/components/database-update";
 export const metadata = { title: "Pipeline" };
 export default async function Pipeline({
   searchParams,
 }: {
   searchParams: Promise<{ removed?: string }>;
 }) {
-  const [{ leads, count, canDelete }, summary, params] = await Promise.all([
-    getLeads({ limit: 500 }),
-    getSummary(),
+  const [initial, { role }, params] = await Promise.all([
+    pipelinePage().catch((error) => {
+      if (
+        error instanceof Error &&
+        error.message === "PIPELINE_DATABASE_UPDATE"
+      )
+        return null;
+      throw error;
+    }),
+    requireContext(),
     searchParams,
   ]);
+  const canDelete = role === "owner";
+  if (!initial) return <DatabaseUpdate />;
   return (
     <>
       <PageHeading
@@ -54,35 +65,9 @@ export default async function Pipeline({
           </Link>
         </p>
       )}
-      {count > 500 && (
-        <p role="status" className="mb-5 text-sm text-primary">
-          Showing the 500 most recently updated leads. Stage totals include all
-          active leads; use the table to search the full pipeline.
-        </p>
-      )}
       <PipelineBoard
-        leads={leads.map(
-          ({
-            id,
-            status,
-            updated_at,
-            estimated_value_cents,
-            next_follow_up,
-            business,
-          }) => ({
-            id,
-            status,
-            updated_at,
-            estimated_value_cents,
-            next_follow_up,
-            business: {
-              name: business.name,
-              industry: business.industry,
-              location: business.location,
-            },
-          }),
-        )}
-        totals={summary.by_status}
+        key={`${initial.total}:${initial.groups.map((g) => g.leads[0]?.updated_at).join(":")}`}
+        initial={initial}
         canDelete={canDelete}
       />
     </>

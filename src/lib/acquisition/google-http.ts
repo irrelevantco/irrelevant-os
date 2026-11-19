@@ -28,9 +28,25 @@ export async function googleJson(
     throw Error(
       `Google request rejected (${response.status}). No automatic retry.`,
     );
-  const text = await response.text();
-  if (text.length > 1000000) throw Error("Google response exceeded its limit.");
-  return JSON.parse(text) as unknown;
+  const reader = response.body?.getReader();
+  if (!reader) throw Error("Google returned an empty response.");
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.length;
+      if (size > 1000000) {
+        await reader.cancel();
+        throw Error("Google response exceeded its limit.");
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
 }
 export async function verifyGoogleAccount(
   accessToken: string,
@@ -53,7 +69,14 @@ export async function verifyGoogleAccount(
 }
 export async function gmailSend(
   token: string,
-  message: { recipient: string; subject: string; body: string },
+  message: {
+    recipient: string;
+    subject: string;
+    body: string;
+    thread_id?: string | null;
+    rfc_message_id?: string | null;
+    automatic_reply?: boolean;
+  },
   transport: typeof fetch = fetch,
 ) {
   return z
@@ -71,7 +94,21 @@ export async function gmailSend(
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            raw: emailRaw(message.recipient, message.subject, message.body),
+            raw: emailRaw(
+              message.recipient,
+              message.subject,
+              message.body,
+              message.rfc_message_id ?? undefined,
+              message.automatic_reply ?? false,
+            ),
+            ...(message.thread_id
+              ? {
+                  threadId: z
+                    .string()
+                    .regex(/^[\w-]{1,200}$/)
+                    .parse(message.thread_id),
+                }
+              : {}),
           }),
         },
         transport,

@@ -1,6 +1,7 @@
 import { z } from "zod";
 export const JOB_KINDS = [
   "research_plan",
+  "research_audit",
   "outreach_draft",
   "follow_up",
   "discovery",
@@ -45,6 +46,7 @@ export const claimedJobSchema = z.object({
     lease_token: z.uuid(),
     input: z.unknown(),
     reserved_credits: z.number(),
+    idempotency_key: z.string().optional(),
   }),
   business: z
     .object({
