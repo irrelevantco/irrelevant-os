@@ -25,3 +25,7 @@ Each tick queues the current eligible batch and processes at most one eligible p
 The main dashboard metric now sums the recorded estimates of open leads with at least one non-cancelled agreed appointment. Each lead counts once even with multiple meetings. Closed/Won/Lost/Suppressed leads are excluded. Leads without an estimate contribute no assumed value and are disclosed. The separate all-open-lead estimate total remains visible for comparison. These amounts are neither confirmed budgets nor contracts, revenue, cash or MRR.
 
 Metrics refresh every ten seconds while the page is visible, and on returning to the tab. Refresh failures retain the last values with a stale warning. No WebSocket/instantaneous update claim is made. Integration and browser tests verify meeting-backed value, overlap checks, cancellation, organization isolation and updates without page reload.
+
+## Regional engine extension
+
+The above describes the legacy single-city scheduler. The newer optional **Acquisition engine** replaces that schedule when enabled and adds rotating territories, bounded public-web research and separately approved seven-day sending/reply/appointment policies. Its default daily discovery allowance is 24, maximum 56; optional auto-import is an explicit independent choice. The local availability and opportunity-value definitions above still apply. See [ACQUISITION_ENGINE.md](ACQUISITION_ENGINE.md) for current behavior, approval gates and Google read-permission requirements.

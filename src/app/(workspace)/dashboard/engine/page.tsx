@@ -368,7 +368,7 @@ export default async function Engine() {
         ))}
       </Card>
       <Card className="mt-6 min-w-0 p-5 sm:p-7">
-        <h2 className="mb-4 text-lg">Automatic outbox / latest 20</h2>
+        <h2 className="mb-4 text-lg">Automatic outbox & unresolved mail / latest 20</h2>
         {!state.outbox.length && (
           <p className="text-sm text-muted-foreground">
             No automatic messages prepared. Research approval alone does not

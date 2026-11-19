@@ -533,6 +533,16 @@ try {
   );
   check(status === "Suppressed", "Opt-out suppresses the lead");
   check(
+    Boolean(
+      sql(
+        database,
+        prefix() +
+          `select handled_at from public.engine_replies where id='${selection.id}';`,
+      ),
+    ),
+    "A later genuine reply retires an older pending automatic response",
+  );
+  check(
     Number(
       sql(
         database,
@@ -609,6 +619,33 @@ try {
     "A contact changed after preparation cancels the exact queued introduction",
   );
   call("pause_campaign");
+  const uncertainManual = randomUUID();
+  sql(
+    database,
+    `insert into public.email_deliveries(id,organization_id,lead_id,recipient,subject,body,draft_updated_at,review_revision,request_key,fingerprint,status,created_by,started_at) select '${uncertainManual}',organization_id,lead_id,recipient,subject,body,draft_updated_at,review_revision,gen_random_uuid(),'synthetic-manual-unknown','unknown',created_by,${clock} from public.email_deliveries where id='${staleMessage.id}';`,
+  );
+  check(
+    rpc("engine_state", {}).outbox.some(
+      (d: { id: string; kind: string }) =>
+        d.id === uncertainManual && d.kind === "manual",
+    ),
+    "Uncertain manual sends are visible alongside campaign outcomes for reconciliation",
+  );
+  call("resolve_delivery", {
+    id: uncertainManual,
+    message_id: "",
+    confirmed: true,
+  });
+  check(
+    String(
+      sql(
+        database,
+        prefix() +
+          `select status from public.email_deliveries where id='${uncertainManual}';`,
+      ),
+    ) === "failed",
+    "Owner can reconcile a prior manual unknown without re-sending it",
+  );
   const csv =
     "business_name,industry,location,source_url,source_timestamp,research_priority,audit_hypothesis_not_verified\n" +
     Array.from(

@@ -22,3 +22,7 @@ A Growth Review needs approval of its exact version before external delivery. An
 When the agreement is signed, create a workspace with defined scope, deliverables, revision limits, timelines and payment schedule. Track direct project costs and calculate gross margin using actual recognized revenue/cost definitions. Quarterly installments must not be mislabeled monthly recurring revenue. Add creator assignments later without changing the contract of existing client workspaces.
 
 Do not invent case-study results or rely on unverified creator revenue claims when writing outreach or sales material.
+
+## Optional local campaign route
+
+The original exact-message workflow remains available. The acquisition engine additionally supports a seven-day owner-approved template/identity/quota policy, allowing later fully verified and owner-approved three-pillar reviews to generate and send introductions without another per-email approval. Follow-ups/replies/meeting invitations each require explicit policy permissions and current eligibility. Real recipient agreement is still required; ambiguous conversations, negotiation, contracts and payments remain manual. Read [ACQUISITION_ENGINE.md](ACQUISITION_ENGINE.md) before activating it. No campaign is enabled by an app update.
