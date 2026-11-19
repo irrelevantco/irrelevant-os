@@ -180,93 +180,132 @@ function startAutomation(origin) {
   automationTimer = setInterval(tick, 60000);
   void tick();
 }
+const STARTUP_STAGES = {
+  connection: { value: 15, text: "Checking your connection…" },
+  backend: { value: 40, text: "Database connection ready." },
+  server: { value: 60, text: "Starting the application…" },
+  workspace: { value: 85, text: "Opening your workspace…" },
+};
+async function startupProgress(win, stage) {
+  const value = STARTUP_STAGES[stage];
+  if (!value || quitting || win.isDestroyed())
+    throw Error("Startup cancelled.");
+  if (win.webContents.getURL().startsWith("file:"))
+    await win.webContents.executeJavaScript(`(() => {
+      const progress = document.getElementById("startup-progress");
+      const label = document.getElementById("startup-status");
+      if (progress && label) { progress.value = ${value.value}; label.textContent = ${JSON.stringify(value.text)}; }
+    })()`);
+}
 async function openWorkspace(config) {
   const validated = validateConfig(config);
-  activeConfig = validated;
-  let origin = validated.appUrl;
-  if (validated.mode === "bundled") {
-    const health = await fetch(`${validated.supabaseUrl}/auth/v1/health`, {
-      headers: { apikey: validated.publishableKey },
-      signal: AbortSignal.timeout(7000),
-    }).catch(() => null);
-    if (!health?.ok)
-      throw new Error(
-        "Supabase is not responding. For your local workspace, start Docker Desktop and the existing iRRELEVANT Supabase containers, then try again.",
-      );
-    const google = await googleSetup().catch(() => null);
-    const port = await freePort();
-    origin = `http://127.0.0.1:${port}`;
-    // Embedded Electron Node runtime: no system Node/npm and no port 3030 dependency.
-    child = spawn(process.execPath, [path.join(webRoot, "server.js")], {
-      cwd: webRoot,
-      windowsHide: true,
-      stdio: ["ignore", "pipe", "pipe"],
-      env: {
-        ...process.env,
-        ELECTRON_RUN_AS_NODE: "1",
-        NODE_ENV: "production",
-        PORT: String(port),
-        HOSTNAME: "127.0.0.1",
-        APP_URL: origin,
-        IRRELEVANT_DESKTOP: "true",
-        GOOGLE_CLIENT_ID: google?.clientId || "",
-        GOOGLE_CLIENT_SECRET: google?.clientSecret || "",
-        GOOGLE_REDIRECT_URI: `${origin}/api/integrations/google/callback`,
-        OAUTH_TOKEN_ENCRYPTION_KEY: google?.encryptionKey || "",
-        SUPABASE_URL: validated.supabaseUrl,
-        SUPABASE_PUBLISHABLE_KEY: validated.publishableKey,
-        OPERATOR_EMAIL_ALLOWLIST: validated.operatorEmail,
-        ALLOW_LOCAL_INTEGRATION_TESTS: "false",
-        CRON_SECRET: "",
-        AGENT_WORKER_ORGANIZATION_IDS: "",
-        EXPLEE_API_KEY: "",
-      },
-    });
-    let exited = false;
-    child.once("exit", () => {
-      exited = true;
-    });
-    // Drain logs without persisting request data or credentials.
-    child.stdout.on("data", () => {});
-    child.stderr.on("data", () => {});
-    let ready = false;
-    for (let attempt = 0; attempt < 120; attempt++) {
-      if (exited)
-        throw new Error(
-          "The bundled server exited before startup. See the desktop troubleshooting guide.",
-        );
-      const response = await fetch(origin, {
-        signal: AbortSignal.timeout(1000),
-      }).catch(() => null);
-      if (response?.ok) {
-        ready = true;
-        break;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 250));
-    }
-    if (!ready)
-      throw new Error(
-        "The bundled server did not start. Close the app and try again.",
-      );
-  }
   connecting = true;
   const old = windowRef;
   const next = createWindow();
   windowRef = next;
-  next.webContents.on("will-navigate", (event, url) => {
-    try {
-      if (new URL(url).origin !== origin) {
-        event.preventDefault();
-      }
-    } catch {
-      event.preventDefault();
+  next.on("closed", () => {
+    if (connecting && !windowRef) {
+      quitting = true;
+      stopServer();
+      app.quit();
     }
   });
-  await next.loadURL(`${origin}/dashboard`);
-  startAutomation(origin);
-  old?.close();
-  connecting = false;
-  return validated;
+  try {
+    await next.loadFile(path.join(__dirname, "startup.html"));
+    await startupProgress(next, "connection");
+    activeConfig = validated;
+    let origin = validated.appUrl;
+    if (validated.mode === "bundled") {
+      const health = await fetch(`${validated.supabaseUrl}/auth/v1/health`, {
+        headers: { apikey: validated.publishableKey },
+        signal: AbortSignal.timeout(7000),
+      }).catch(() => null);
+      if (!health?.ok)
+        throw new Error(
+          "Supabase is not responding. For your local workspace, start Docker Desktop and the existing iRRELEVANT Supabase containers, then try again.",
+        );
+      await startupProgress(next, "backend");
+      const google = await googleSetup().catch(() => null);
+      const port = await freePort();
+      origin = `http://127.0.0.1:${port}`;
+      // Embedded Electron Node runtime: no system Node/npm and no port 3030 dependency.
+      await startupProgress(next, "server");
+      child = spawn(process.execPath, [path.join(webRoot, "server.js")], {
+        cwd: webRoot,
+        windowsHide: true,
+        stdio: ["ignore", "pipe", "pipe"],
+        env: {
+          ...process.env,
+          ELECTRON_RUN_AS_NODE: "1",
+          NODE_ENV: "production",
+          PORT: String(port),
+          HOSTNAME: "127.0.0.1",
+          APP_URL: origin,
+          IRRELEVANT_DESKTOP: "true",
+          GOOGLE_CLIENT_ID: google?.clientId || "",
+          GOOGLE_CLIENT_SECRET: google?.clientSecret || "",
+          GOOGLE_REDIRECT_URI: `${origin}/api/integrations/google/callback`,
+          OAUTH_TOKEN_ENCRYPTION_KEY: google?.encryptionKey || "",
+          SUPABASE_URL: validated.supabaseUrl,
+          SUPABASE_PUBLISHABLE_KEY: validated.publishableKey,
+          OPERATOR_EMAIL_ALLOWLIST: validated.operatorEmail,
+          ALLOW_LOCAL_INTEGRATION_TESTS: "false",
+          CRON_SECRET: "",
+          AGENT_WORKER_ORGANIZATION_IDS: "",
+          EXPLEE_API_KEY: "",
+        },
+      });
+      let exited = false;
+      child.once("exit", () => {
+        exited = true;
+      });
+      // Drain logs without persisting request data or credentials.
+      child.stdout.on("data", () => {});
+      child.stderr.on("data", () => {});
+      let ready = false;
+      for (let attempt = 0; attempt < 120; attempt++) {
+        if (exited)
+          throw new Error(
+            "The bundled server exited before startup. See the desktop troubleshooting guide.",
+          );
+        const response = await fetch(origin, {
+          signal: AbortSignal.timeout(1000),
+        }).catch(() => null);
+        if (response?.ok) {
+          ready = true;
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+      if (!ready)
+        throw new Error(
+          "The bundled server did not start. Close the app and try again.",
+        );
+    }
+    await startupProgress(next, "workspace");
+    next.webContents.on("will-navigate", (event, url) => {
+      try {
+        if (new URL(url).origin !== origin) {
+          event.preventDefault();
+        }
+      } catch {
+        event.preventDefault();
+      }
+    });
+    await next.loadURL(`${origin}/dashboard`);
+    startAutomation(origin);
+    old?.close();
+    connecting = false;
+    return validated;
+  } catch (error) {
+    stopServer();
+    if (old && !old.isDestroyed()) {
+      windowRef = old;
+      next.close();
+    }
+    connecting = false;
+    throw error;
+  }
 }
 async function updateLocalDatabase() {
   if (upgrading) return;
@@ -479,7 +518,7 @@ if (!app.requestSingleInstanceLock()) {
         );
         await openWorkspace(config);
       } catch {
-        await showSetup();
+        if (!quitting) await showSetup();
       }
     })
     .catch(() => {

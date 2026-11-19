@@ -679,6 +679,50 @@ try {
     ) === null,
     "Carried-over research starts consume today's dispatch allowance",
   );
+  call("configure", {
+    ...settings,
+    schedule_start_hour: 11,
+    schedule_end_hour: 15,
+    cycle_minutes: 15,
+  });
+  sql(
+    database,
+    `update public.engine_settings set last_tick_at=null where organization_id='${org}';`,
+  );
+  check(
+    call("tick").active === false,
+    "A selected later start holds automatic work outside its window",
+  );
+  call("configure", {
+    ...settings,
+    schedule_start_hour: 7,
+    schedule_end_hour: 15,
+    cycle_minutes: 15,
+  });
+  sql(
+    database,
+    `update public.engine_settings set last_tick_at=null where organization_id='${org}';`,
+  );
+  check(
+    call("tick").active === true,
+    "A valid selected automation window permits a cycle",
+  );
+  sql(
+    database,
+    `update public.engine_settings set last_tick_at=${clock}-interval '1 minute' where organization_id='${org}';`,
+  );
+  check(
+    call("tick").active === false,
+    "The persisted fifteen-minute cadence prevents an extra cycle",
+  );
+  check(
+    sql(
+      database,
+      prefix(outsider) + `select public.assistant_schedule('${org}');`,
+      false,
+    ),
+    "Another tenant cannot read assistant schedule capability",
+  );
   console.log(
     "Pre-import engine checks passed; verifying large-batch import and provenance.",
   );

@@ -102,7 +102,11 @@ export function AgentSettingsForm({
 export function QueueForm({
   leads,
   requestKey,
+  defaultLead = "",
+  defaultKind = "research_plan",
 }: {
+  defaultLead?: string;
+  defaultKind?: "research_plan" | "outreach_draft" | "follow_up";
   leads: { id: string; name: string }[];
   requestKey: string;
 }) {
@@ -111,14 +115,14 @@ export function QueueForm({
     <form action={action} className="space-y-4">
       <input type="hidden" name="request_key" value={requestKey} />
       <Field label="Preparation workflow">
-        <Select name="kind">
+        <Select name="kind" defaultValue={defaultKind}>
           <option value="research_plan">Research plan</option>
           <option value="outreach_draft">Evidence-based outreach draft</option>
           <option value="follow_up">Follow-up draft</option>
         </Select>
       </Field>
       <Field label="Prospect">
-        <Select name="lead" required>
+        <Select name="lead" defaultValue={defaultLead} required>
           <option value="">Choose a business</option>
           {leads.map((l) => (
             <option key={l.id} value={l.id}>

@@ -143,7 +143,10 @@ test("CSV preview, mapping, import, research approval and draft preparation", as
   await expect
     .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
     .toBeLessThanOrEqual(page.viewportSize()!.width);
-  await page.getByRole("link", { name: "Agent control", exact: true }).click();
+  await page.getByRole("link", { name: "iR Agent", exact: true }).click();
+  await page
+    .getByRole("link", { name: "Advanced preparation controls", exact: true })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Work worth approving." }),
   ).toBeVisible();

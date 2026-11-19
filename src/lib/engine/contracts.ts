@@ -62,41 +62,57 @@ export const TERRITORIES = [
     "Barberton",
   ].map((city) => ({ city, state: "OH" })),
 ];
-export const engineSettingsSchema = z.object({
-  enabled: z.boolean(),
-  target_leads: z.coerce.number().int().min(1000).max(100000),
-  contact_goal: z.coerce.number().int().min(1).max(100000),
-  research_enabled: z.boolean(),
-  discovery_enabled: z.boolean(),
-  auto_import: z.boolean(),
-  daily_research_limit: z.coerce.number().int().min(1).max(50),
-  daily_discovery_limit: z.coerce.number().int().min(1).max(56),
-  schedule_start_hour: z.coerce.number().int().min(7).max(14).default(7),
-  schedule_end_hour: z.coerce.number().int().min(8).max(15).default(15),
-  cycle_minutes: z.coerce.number().pipe(z.union([z.literal(1),z.literal(5),z.literal(15),z.literal(30),z.literal(60)])).default(1),
-  ai_provider: z.enum(["rules", "ollama", "openai"]).default("rules"),
-  ai_model: z
-    .string()
-    .trim()
-    .max(100)
-    .regex(/^[\w./:-]*$/)
-    .default(""),
-  territories: z
-    .array(territorySchema)
-    .min(1)
-    .max(50)
-    .refine(
-      (a) =>
-        new Set(a.map((t) => `${t.city.toLowerCase()}:${t.state}`)).size ===
-        a.length,
-      "Each territory must be unique.",
-    ),
-  categories: z
-    .array(z.enum(ENGINE_CATEGORIES))
-    .min(1)
-    .max(13)
-    .refine((a) => new Set(a).size === a.length),
-}).refine(value=>value.schedule_start_hour<value.schedule_end_hour,"The automation window must end after it starts.");
+export const engineSettingsSchema = z
+  .object({
+    enabled: z.boolean(),
+    target_leads: z.coerce.number().int().min(1000).max(100000),
+    contact_goal: z.coerce.number().int().min(1).max(100000),
+    research_enabled: z.boolean(),
+    discovery_enabled: z.boolean(),
+    auto_import: z.boolean(),
+    daily_research_limit: z.coerce.number().int().min(1).max(50),
+    daily_discovery_limit: z.coerce.number().int().min(1).max(56),
+    schedule_start_hour: z.coerce.number().int().min(7).max(14).default(7),
+    schedule_end_hour: z.coerce.number().int().min(8).max(15).default(15),
+    cycle_minutes: z.coerce
+      .number()
+      .pipe(
+        z.union([
+          z.literal(1),
+          z.literal(5),
+          z.literal(15),
+          z.literal(30),
+          z.literal(60),
+        ]),
+      )
+      .default(1),
+    ai_provider: z.enum(["rules", "ollama", "openai"]).default("rules"),
+    ai_model: z
+      .string()
+      .trim()
+      .max(100)
+      .regex(/^[\w./:-]*$/)
+      .default(""),
+    territories: z
+      .array(territorySchema)
+      .min(1)
+      .max(50)
+      .refine(
+        (a) =>
+          new Set(a.map((t) => `${t.city.toLowerCase()}:${t.state}`)).size ===
+          a.length,
+        "Each territory must be unique.",
+      ),
+    categories: z
+      .array(z.enum(ENGINE_CATEGORIES))
+      .min(1)
+      .max(13)
+      .refine((a) => new Set(a).size === a.length),
+  })
+  .refine(
+    (value) => value.schedule_start_hour < value.schedule_end_hour,
+    "The automation window must end after it starts.",
+  );
 export const campaignPolicySchema = z.object({
   daily_limit: z.coerce.number().int().min(1).max(500),
   total_limit: z.coerce.number().int().min(1).max(1000),

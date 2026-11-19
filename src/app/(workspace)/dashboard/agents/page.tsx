@@ -1,55 +1,78 @@
 import Link from "next/link";
 import { randomUUID } from "node:crypto";
 import { requireContext } from "@/lib/context";
+import { assistantQuerySchema } from "@/lib/assistant";
+import { engineStateSchema, THREAD_READ_SCOPE } from "@/lib/engine/contracts";
+import { connection } from "@/lib/acquisition/google";
+import { SENDER_EMAIL } from "@/lib/acquisition/contracts";
+import { researchLead, growthReview } from "@/lib/research-data";
+import { missingDatabaseMigration } from "@/lib/database-failure";
+import { AssistantWindow } from "@/components/assistant/window";
 import { PageHeading } from "@/components/page-heading";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { DatabaseUpdate } from "@/components/database-update";
 import {
+  AgentControl,
   AgentSettingsForm,
   QueueForm,
-  DiscoveryForm,
-  AgentControl,
   AcceptProposal,
 } from "@/components/agents/forms";
-import { z } from "zod";
-import { missingDatabaseMigration } from "@/lib/database-failure";
-import { DatabaseUpdate } from "@/components/database-update";
-export const metadata = { title: "Agent control" };
-const proposal = z.object({ email_draft: z.string(), call_script: z.string() });
-export default async function Agents() {
+import { DiscoveryChoices } from "@/components/assistant/discovery";
+import {
+  EngineSettingsForm,
+  EngineButtons,
+  QueueResearchForm,
+  ApplyResearchForm,
+} from "@/components/engine/forms";
+import { CampaignPanel } from "@/components/engine/campaign-panel";
+import { ReviewForm, ApprovalForm } from "@/components/research/review-form";
+import { CsvImportForm } from "@/components/research/import-form";
+import { MeetingForm } from "@/components/acquisition/forms";
+import { Button } from "@/components/ui/button";
+import { dateTime } from "@/lib/utils";
+export const metadata = { title: "iR Agent" };
+export default async function Agent({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  const query = assistantQuerySchema.parse(await searchParams);
   const { db, organization, role } = await requireContext();
-  const [settings, jobs, leads, suppressed, capabilities] = await Promise.all([
-    db
-      .from("agent_settings")
-      .select("*")
-      .eq("organization_id", organization.id)
-      .maybeSingle(),
-    db
-      .from("agent_jobs")
-      .select("*")
-      .eq("organization_id", organization.id)
-      .order("created_at", { ascending: false })
-      .limit(50),
-    db
-      .from("leads")
-      .select("id,business:businesses!inner(name)")
-      .eq("organization_id", organization.id)
-      .not("status", "in", "(Won,Lost,Suppressed)")
-      .order("research_priority")
-      .limit(500),
-    db
-      .from("suppression_entries")
-      .select("id", { count: "exact", head: true })
-      .eq("organization_id", organization.id),
-    db.rpc("preparation_capabilities", { org: organization.id }),
-  ]);
+  let jobQuery = db
+    .from("agent_jobs")
+    .select("*")
+    .eq("organization_id", organization.id)
+    .order("created_at", { ascending: false })
+    .limit(20);
+  if (query.lead && ["research", "email"].includes(query.task))
+    jobQuery = jobQuery.eq("lead_id", query.lead);
+  const [settings, jobs, leads, engine, capability, total, google] =
+    await Promise.all([
+      db
+        .from("agent_settings")
+        .select("*")
+        .eq("organization_id", organization.id)
+        .maybeSingle(),
+      jobQuery,
+      db
+        .from("leads")
+        .select("id,status,business:businesses!inner(name)", { count: "exact" })
+        .eq("organization_id", organization.id)
+        .not("status", "in", "(Won,Lost,Suppressed)")
+        .order("research_priority")
+        .order("id")
+        .range((query.page - 1) * 50, query.page * 50 - 1),
+      db.rpc("engine_state", { org: organization.id }),
+      db.rpc("assistant_schedule", { org: organization.id }),
+      db.rpc("crm_summary", { org: organization.id }),
+      role === "owner" ? connection(db, organization.id) : null,
+    ]);
   if (
     [
       settings.error,
       jobs.error,
       leads.error,
-      suppressed.error,
-      capabilities.error,
+      engine.error,
+      capability.error,
     ].some(missingDatabaseMigration)
   )
     return <DatabaseUpdate />;
@@ -57,192 +80,400 @@ export default async function Agents() {
     settings.error ||
     jobs.error ||
     leads.error ||
-    suppressed.error ||
-    capabilities.error
+    engine.error ||
+    capability.error ||
+    total.error
   )
-    throw new Error("Could not load agent control. Apply the agent migration.");
-  const owner = role === "owner";
-  const list = jobs.data ?? [];
+    throw Error(
+      "The assistant could not load your workspace. Check the database connection.",
+    );
+  const state = engineStateSchema.parse(engine.data),
+    owner = role === "owner";
+  const selected = query.lead ? await researchLead(query.lead) : null;
+  const selectedReview =
+    selected && query.task === "research"
+      ? await growthReview(selected.id)
+      : null;
+  const list = (leads.data ?? []).map((l) => ({
+    id: l.id,
+    name: l.business.name,
+  }));
+  const sender = {
+    name: settings.data?.sender_name ?? "",
+    email: settings.data?.sender_email ?? "",
+    address: settings.data?.postal_address ?? "",
+  };
+  const canActivate = Boolean(
+    owner &&
+    state.settings?.enabled &&
+    !state.paused &&
+    sender.name &&
+    sender.address &&
+    sender.email.toLowerCase() === SENDER_EMAIL &&
+    google?.scopes.includes(THREAD_READ_SCOPE) &&
+    google.scopes.includes("https://www.googleapis.com/auth/gmail.send"),
+  );
+  const paid = Number(process.env.AI_MAX_CALL_USD),
+    paidCap = Number.isFinite(paid) && paid > 0 && paid <= 1 ? paid : null;
+  const choose = (
+    <div className="space-y-3">
+      <form
+        method="get"
+        action="/dashboard/agents"
+        className="flex flex-wrap items-end gap-3"
+      >
+        <input type="hidden" name="task" value={query.task} />
+        <input type="hidden" name="page" value={query.page} />
+        <label className="grid min-w-0 flex-1 gap-2 text-sm">
+          Choose a business
+          <select
+            name="lead"
+            defaultValue={query.lead ?? ""}
+            required
+            className="min-w-0 rounded-lg border border-border bg-card p-3 text-base"
+          >
+            <option value="">Choose from this page</option>
+            {selected && !list.some((l) => l.id === selected.id) && (
+              <option value={selected.id}>{selected.business.name}</option>
+            )}
+            {list.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Button type="submit">Choose business</Button>
+      </form>
+      <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+        <span>
+          Page {query.page} · {(leads.count ?? 0).toLocaleString()} open
+          businesses
+        </span>
+        {query.page > 1 && (
+          <Link
+            className="underline"
+            href={`/dashboard/agents?task=${query.task}&page=${query.page - 1}`}
+          >
+            Previous 50
+          </Link>
+        )}
+        {query.page * 50 < (leads.count ?? 0) && (
+          <Link
+            className="underline"
+            href={`/dashboard/agents?task=${query.task}&page=${query.page + 1}`}
+          >
+            Next 50
+          </Link>
+        )}
+      </div>
+    </div>
+  );
   return (
     <>
       <PageHeading
-        eyebrow="Operations / Controlled preparation"
-        title="Work worth approving."
-        description="Research plans, evidence-based introductions, follow-up drafts and optional provider discovery. Nothing sends email, publishes content or changes billing."
-        action={
-          <Badge>
-            {settings.data?.paused === false
-              ? "Preparation enabled"
-              : "Agents paused"}
-          </Badge>
-        }
+        eyebrow="Your workspace / Guided operations"
+        title="Choose the work. Keep control."
+        description="A choice-based assistant for the workflows already in your workspace. Built-in guidance uses rules, with no chat-model usage fee."
       />
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <Card className="p-5">
-          <p className="text-xs text-muted-foreground">Queued / latest 50</p>
-          <p className="editorial mt-2 text-3xl">
-            {list.filter((j) => j.status === "queued").length}
-          </p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-xs text-muted-foreground">
-            Draft approvals / latest 50
-          </p>
-          <p className="editorial mt-2 text-3xl">
-            {
-              list.filter(
-                (j) =>
-                  j.status === "succeeded" &&
-                  !j.approved_at &&
-                  ["outreach_draft", "follow_up"].includes(j.kind),
-              ).length
-            }
-          </p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-xs text-muted-foreground">
-            Suppressed businesses / all records
-          </p>
-          <p className="editorial mt-2 text-3xl">{suppressed.count ?? 0}</p>
-        </Card>
+      <div className="mb-5 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+        <p>
+          {Number((total.data as { total: number }).total).toLocaleString()}{" "}
+          active leads
+        </p>
+        <p>{state.paused ? "Agents paused" : "Preparation enabled"}</p>
+        <p>
+          Campaign:{" "}
+          {state.settings?.campaign_until &&
+          new Date(state.settings.campaign_until) > new Date() &&
+          !state.paused
+            ? "Approved policy"
+            : "Not active"}
+        </p>
       </div>
-      {owner && (
-        <>
-          <Card className="mb-6 p-5 text-sm leading-7">
-            <strong>Start without paid tools.</strong> Resume preparation,
-            choose one of your current prospects, queue a Research plan, then
-            run the next job. The plan is a research checklist. Drafting an
-            email still requires your verified, approved review and sender
-            details.
-          </Card>
-          <div className="mb-6 flex flex-wrap gap-4">
-            {settings.data?.paused !== false && <AgentControl kind="resume" />}
-            <AgentControl kind="run" />
-            <AgentControl kind="stop" />
-          </div>
-          <div className="mb-6 grid gap-6 xl:grid-cols-2">
-            <Card className="min-w-0 p-5 sm:p-7">
-              <h2 className="mb-5 text-lg">Preparation queue</h2>
-              <QueueForm
-                requestKey={randomUUID()}
-                leads={(leads.data ?? []).map((l) => ({
-                  id: l.id,
-                  name: l.business.name,
-                }))}
-              />
-            </Card>
-            <Card className="min-w-0 p-5 sm:p-7">
-              <h2 className="mb-5 text-lg">Find fitting businesses</h2>
-              <DiscoveryForm
-                requestKey={randomUUID()}
-                configured={Boolean(process.env.EXPLEE_API_KEY)}
-              />
-            </Card>
-            <Card className="min-w-0 p-5 sm:p-7 xl:col-span-2">
-              <h2 className="mb-5 text-lg">Limits and identity</h2>
-              <AgentSettingsForm settings={settings.data} />
-              <p className="mt-4 text-xs leading-6 text-muted-foreground">
-                The built-in preparation provider uses deterministic rules and
-                recorded evidence, with no model fees. Jobs run only through an
-                authenticated owner session. Unattended scheduled processing is
-                not enabled. Explee calls are not automatically retried,
-                including timeouts. Allowances reserve the documented credit
-                cost; unexpected charges pause further work.
-              </p>
-            </Card>
-          </div>
-        </>
-      )}
-      <h2 className="mb-5 text-lg">Job history and proposals</h2>
-      <p className="mb-4 text-xs text-muted-foreground">
-        Latest 50 jobs. Provider charges below are credits reported by the
-        provider, not a USD estimate. Failed searches may have been charged;
-        reserved credits remain consumed for the day.
-      </p>
-      <div className="space-y-5">
-        {!list.length && (
-          <Card className="p-6 text-sm text-muted-foreground">
-            No jobs yet. Configure limits and queue a research plan to begin.
-          </Card>
+      <AssistantWindow task={query.task} lead={query.lead}>
+        {!owner && (
+          <p className="text-sm text-muted-foreground">
+            The workspace owner runs agents and approves external actions. You
+            can review your organization’s records.
+          </p>
         )}
-        {list.map((j) => {
-          const draft = proposal.safeParse(j.result);
-          return (
-            <Card key={j.id} className="min-w-0 p-5 sm:p-7">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h3 className="text-base">{j.kind.replaceAll("_", " ")}</h3>
-                <Badge>
-                  {j.status}
-                  {j.approved_at ? " / accepted as draft" : ""}
-                </Badge>
-              </div>
-              <p className="mt-2 break-all text-[11px] text-muted-foreground">
-                {j.id} · attempts {j.attempts}/3 · reserved {j.reserved_credits}{" "}
-                credits · charged {j.charged_credits ?? "not reported"}
-              </p>
-              {j.lead_id && (
-                <Link
-                  href={`/dashboard/outreach/${j.lead_id}`}
-                  className="mt-3 inline-block text-xs text-primary underline"
-                >
-                  Open prospect preparation
+        {query.task === "home" && (
+          <div className="space-y-5">
+            <p className="text-sm leading-7 text-muted-foreground">
+              Start with a list, research the evidence, then prepare outreach.
+              An app update does not add businesses automatically: import your
+              prospect CSV to increase the live count.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {owner && settings.data?.paused !== false && (
+                <AgentControl kind="resume" />
+              )}
+              {owner && <AgentControl kind="run" />}
+              <Button asChild variant="outline">
+                <Link href="/dashboard/agents?task=imports">
+                  Import my prospects
                 </Link>
-              )}
-              {j.approved_at && (
-                <p role="status" className="mt-4 text-sm text-primary">
-                  Proposal copied into the editable draft. No sending was
-                  authorized.
+              </Button>
+            </div>
+            <p className="text-xs leading-6 text-muted-foreground">
+              Selected tasks open below. Review sources and exact messages
+              before approval. Optional provider/model costs are shown in their
+              settings; the guide itself makes no model calls.
+            </p>
+          </div>
+        )}
+        {query.task === "discover" && owner && (
+          <div className="space-y-6">
+            <DiscoveryChoices requestKey={randomUUID()} />
+            <AgentControl kind="run" />
+            <p className="text-xs text-muted-foreground">
+              Completed searches appear in Work & approvals and Imports for
+              review.
+            </p>
+          </div>
+        )}
+        {(query.task === "research" || query.task === "email") && (
+          <div className="space-y-6">
+            {choose}
+            {selected && (
+              <>
+                <h3 className="text-lg">{selected.business.name}</h3>
+                {owner && (
+                  <QueueForm
+                    requestKey={randomUUID()}
+                    leads={[{ id: selected.id, name: selected.business.name }]}
+                    defaultLead={selected.id}
+                    defaultKind={
+                      query.task === "email"
+                        ? "outreach_draft"
+                        : "research_plan"
+                    }
+                  />
+                )}{" "}
+                {owner && query.task === "research" && (
+                  <>
+                    <p className="text-sm text-muted-foreground">
+                      Public-web review requires the enabled local engine.
+                      Choose Automation & timing to enable it, then queue a
+                      review. Its observations remain unverified.
+                    </p>
+                    <QueueResearchForm
+                      leadId={selected.id}
+                      requestKey={randomUUID()}
+                    />
+                  </>
+                )}
+                {owner && <AgentControl kind="run" />}
+                {query.task === "email" &&
+                  jobs.data
+                    ?.filter(
+                      (j) =>
+                        j.status === "succeeded" &&
+                        !j.approved_at &&
+                        j.result &&
+                        typeof j.result === "object" &&
+                        !Array.isArray(j.result) &&
+                        typeof j.result.email_draft === "string",
+                    )
+                    .map((j) => (
+                      <div
+                        key={j.id}
+                        className="rounded border border-border p-4"
+                      >
+                        <h4 className="text-sm">
+                          Proposed email · needs your review
+                        </h4>
+                        <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-7">
+                          {(j.result as { email_draft: string }).email_draft}
+                        </p>
+                        {owner && <AcceptProposal job={j.id} />}
+                      </div>
+                    ))}
+                {query.task === "email" && (
+                  <Button asChild>
+                    <Link href={`/dashboard/outreach/${selected.id}`}>
+                      Review full email and sending approval
+                    </Link>
+                  </Button>
+                )}
+                {selectedReview && (
+                  <>
+                    <ReviewForm
+                      review={selectedReview.review}
+                      points={selectedReview.points}
+                    />
+                    {owner && (
+                      <ApprovalForm
+                        review={selectedReview.review}
+                        canApprove={selectedReview.points.some(
+                          (p) =>
+                            p.verification_status === "verified" &&
+                            !!p.source_url &&
+                            !!p.observation.trim(),
+                        )}
+                      />
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        )}
+        {query.task === "automation" && owner && (
+          <div className="space-y-6">
+            <p className="text-sm leading-7 text-muted-foreground">
+              Choose a weekday window and check frequency, then select discovery
+              and/or research. Saving these controls pauses the previous email
+              policy. Automatic emails need the separate campaign approval step.
+              Processing requires an open, signed-in Windows app or web
+              workspace; a sleeping free host or closed Safari does not run an
+              always-on worker.
+            </p>
+            <EngineSettingsForm settings={state.settings} paidCap={paidCap} />
+            <EngineButtons />
+          </div>
+        )}
+        {query.task === "campaign" && owner && (
+          <CampaignPanel
+            state={state}
+            sender={sender}
+            canActivate={canActivate}
+          />
+        )}
+        {query.task === "meetings" && (
+          <div className="space-y-6">
+            <h3 className="text-base">Latest recorded replies</h3>
+            {!state.replies.length && (
+              <p className="text-sm text-muted-foreground">
+                No tracked replies recorded. Connect Gmail reply permission and
+                activate a policy to synchronize conversations.
+              </p>
+            )}
+            {state.replies.slice(0, 5).map((r) => (
+              <div key={r.id} className="border-b border-border pb-4">
+                <p className="text-sm">
+                  {r.business_name} · {r.classification}
                 </p>
-              )}
-              {j.error && (
-                <p className="mt-4 text-sm text-red-300">{j.error}</p>
-              )}
-              {j.result && (
-                <details
-                  className="mt-5"
-                  open={j.status === "succeeded" && !j.approved_at}
-                >
-                  <summary className="cursor-pointer text-sm text-primary">
-                    Review output
-                  </summary>
-                  {draft.success ? (
-                    <div className="mt-4 space-y-5">
-                      <p className="whitespace-pre-wrap break-words text-sm leading-7">
-                        {draft.data.email_draft}
-                      </p>
-                      <p className="whitespace-pre-wrap break-words border-t border-border pt-4 text-sm leading-7">
-                        {draft.data.call_script}
-                      </p>
-                    </div>
-                  ) : (
-                    <pre className="mt-4 max-h-96 overflow-auto whitespace-pre-wrap break-words text-xs leading-6">
+                <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">
+                  {r.body}
+                </p>
+              </div>
+            ))}
+            {owner && (
+              <>
+                <h3 className="text-base">Record an actual agreed time</h3>
+                {choose}
+                <MeetingForm
+                  requestKey={randomUUID()}
+                  leads={
+                    selected
+                      ? [{ id: selected.id, name: selected.business.name }]
+                      : list
+                  }
+                />
+              </>
+            )}
+            <Link
+              className="text-sm text-primary underline"
+              href="/dashboard/schedule"
+            >
+              Review appointments and Google Calendar outcomes
+            </Link>
+          </div>
+        )}
+        {query.task === "imports" && (
+          <div className="space-y-6">
+            {owner && <CsvImportForm />}
+            <div className="flex flex-wrap gap-5 text-sm text-primary underline">
+              <Link href="/dashboard/converter">
+                Convert XLSX, CSV or other spreadsheet templates
+              </Link>
+              <Link href="/dashboard/imports">Review import results</Link>
+              <a href="/api/engine/inventory">Download the real count report</a>
+            </div>
+            <p className="text-xs leading-6 text-muted-foreground">
+              CSV preview supports up to 2,000 rows / 1 MB. Confirmation imports
+              Discovered prospects and skips duplicates. Employee/payroll
+              conversion does not create a payroll processing system.
+            </p>
+          </div>
+        )}
+        {query.task === "identity" && owner && (
+          <div className="space-y-6">
+            <AgentSettingsForm settings={settings.data} />
+            <Link
+              className="text-sm text-primary underline"
+              href="/dashboard/connections"
+            >
+              Connect or renew Google permissions
+            </Link>
+          </div>
+        )}
+        {query.task === "pause" && owner && <AgentControl kind="stop" />}
+        {query.task === "activity" && (
+          <div className="space-y-5">
+            {owner && <AgentControl kind="run" />}
+            {!jobs.data?.length && (
+              <p className="text-sm text-muted-foreground">
+                No jobs recorded yet.
+              </p>
+            )}
+            {jobs.data?.map((j) => (
+              <article
+                key={j.id}
+                className="rounded-lg border border-border p-4"
+              >
+                <p className="text-sm">
+                  {j.kind.replaceAll("_", " ")} · {j.status}
+                </p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {dateTime(j.created_at)}
+                </p>
+                {j.error && (
+                  <p role="alert" className="mt-3 text-sm text-red-300">
+                    {j.error}
+                  </p>
+                )}
+                {j.result && (
+                  <details className="mt-3">
+                    <summary className="cursor-pointer text-sm text-primary">
+                      Review recorded output
+                    </summary>
+                    <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap break-words text-xs">
                       {JSON.stringify(j.result, null, 2)}
                     </pre>
-                  )}
-                </details>
-              )}
-              {owner &&
-                draft.success &&
-                j.status === "succeeded" &&
-                !j.approved_at && <AcceptProposal job={j.id} />}
-              <div className="mt-4">
-                {owner &&
-                  j.kind === "discovery" &&
-                  j.status === "succeeded" &&
-                  j.result &&
-                  typeof j.result === "object" &&
-                  !Array.isArray(j.result) &&
-                  Array.isArray(j.result.companies) &&
-                  j.result.companies.length > 0 && (
-                    <AgentControl kind="preview" job={j.id} />
-                  )}
-                {owner && ["queued", "running"].includes(j.status) && (
-                  <AgentControl kind="stop" job={j.id} />
+                  </details>
                 )}
-              </div>
-            </Card>
-          );
-        })}
+                {owner &&
+                  j.kind === "research_audit" &&
+                  j.status === "succeeded" &&
+                  !j.approved_at && <ApplyResearchForm jobId={j.id} />}{" "}
+                {j.lead_id && (
+                  <Link
+                    className="mt-3 inline-block text-sm text-primary underline"
+                    href={`/dashboard/outreach/${j.lead_id}`}
+                  >
+                    Review prospect and saved email
+                  </Link>
+                )}
+              </article>
+            ))}
+            <Link
+              className="text-sm text-primary underline"
+              href="/dashboard/agents/advanced"
+            >
+              Full job proposals and advanced controls
+            </Link>
+          </div>
+        )}
+      </AssistantWindow>
+      <div className="mt-5 flex flex-wrap gap-5 text-xs text-muted-foreground underline">
+        <Link href="/dashboard/agents/advanced">
+          Advanced preparation controls
+        </Link>
+        <Link href="/dashboard/engine">Full engine diagnostics</Link>
+        <Link href="/dashboard/connections">Connections</Link>
       </div>
     </>
   );

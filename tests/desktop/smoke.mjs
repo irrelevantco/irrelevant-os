@@ -10,6 +10,7 @@ const executablePath = process.env.DESKTOP_EXECUTABLE;
 if (!executablePath) throw new Error("DESKTOP_EXECUTABLE is required.");
 const profile = await mkdtemp(path.join(tmpdir(), "irrelevant-desktop-test-"));
 let mock, electronApp;
+let releaseStartupHealth = () => {};
 try {
   let url, key, email, password, leadId;
   const real = process.env.DESKTOP_TEST_REAL_BACKEND === "true";
@@ -44,7 +45,11 @@ try {
     if (prospect.error) throw new Error("Local fixture prospect failed.");
     leadId = prospect.data;
   } else {
-    mock = createServer((request, response) => {
+    const healthGate = new Promise((resolve) => {
+      releaseStartupHealth = resolve;
+    });
+    mock = createServer(async (request, response) => {
+      if (request.url === "/auth/v1/health") await healthGate;
       response.writeHead(request.url === "/auth/v1/health" ? 200 : 401, {
         "Content-Type": "application/json",
       });
@@ -106,6 +111,12 @@ try {
       await setup.getByRole("status").innerText(),
     );
     throw error;
+  }
+  if (!real) {
+    await expect(
+      window.getByRole("progressbar", { name: "Workspace startup" }),
+    ).toBeVisible();
+    releaseStartupHealth();
   }
   await expect(
     window.getByRole("heading", { name: "Welcome back." }),

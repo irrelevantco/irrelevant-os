@@ -46,7 +46,12 @@ const proposalSchema = z.object({
 });
 export default async function Engine() {
   const { db, organization, role } = await requireContext();
-  const result = await db.rpc("engine_state", { org: organization.id });
+  const [result, schedule] = await Promise.all([
+    db.rpc("engine_state", { org: organization.id }),
+    db.rpc("assistant_schedule", { org: organization.id }),
+  ]);
+  if (missingDatabaseMigration(schedule.error)) return <DatabaseUpdate />;
+  if (schedule.error) throw Error("Could not load automation timing.");
   if (missingDatabaseMigration(result.error)) return <DatabaseUpdate />;
   if (result.error) throw Error("Could not load the acquisition engine.");
   const state = engineStateSchema.parse(result.data),
@@ -147,7 +152,11 @@ export default async function Engine() {
             <h2 className="mb-5 text-lg">Territory, goals and research</h2>
             <EngineSettingsForm settings={settings} paidCap={paidCap} />
           </Card>
-          <CampaignPanel state={state} sender={sender} canActivate={canActivate} />
+          <CampaignPanel
+            state={state}
+            sender={sender}
+            canActivate={canActivate}
+          />
         </div>
       )}
       <Card className="mt-6 min-w-0 p-5 sm:p-7">
@@ -266,7 +275,9 @@ export default async function Engine() {
         ))}
       </Card>
       <Card className="mt-6 min-w-0 p-5 sm:p-7">
-        <h2 className="mb-4 text-lg">Automatic outbox & unresolved mail / latest 20</h2>
+        <h2 className="mb-4 text-lg">
+          Automatic outbox & unresolved mail / latest 20
+        </h2>
         {!state.outbox.length && (
           <p className="text-sm text-muted-foreground">
             No automatic messages prepared. Research approval alone does not
