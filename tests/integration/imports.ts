@@ -437,6 +437,114 @@ check(
     ).total_imported === 0,
   "Summary RPC cannot leak another tenant",
 );
+// Exercise the real PostgREST query path with a growing tenant. Direct SQL
+// timings alone missed repeated RLS checks in the previous invoker RPC.
+const baseTotal = (await a.rpc("crm_summary", { org: orgA })).data as {
+  total: number;
+};
+const pipelineRows = Array.from({ length: 1205 }, (_, i) => ({
+  row_number: i + 2,
+  raw: { name: `Pipeline HTTP fixture ${run} ${i}` },
+  payload: {
+    business_name: `Pipeline HTTP fixture ${run} ${i}`,
+    industry: "Synthetic services",
+    location: "Test City PA",
+    website: `https://pipeline-${run}-${i}.example.test`,
+  },
+  errors: [],
+}));
+const pipelineBatch = await a.rpc("preview_prospect_import", {
+  org: orgA,
+  batch_label: "Synthetic pipeline read check",
+  file_name: "synthetic.csv",
+  file_fingerprint: createHash("sha256")
+    .update(`pipeline-${run}`)
+    .digest("hex"),
+  field_mapping: {},
+  rows: pipelineRows as unknown as Json,
+});
+assert.ok(pipelineBatch.data, JSON.stringify(pipelineBatch.error));
+assert.equal(
+  (
+    await a.rpc("commit_prospect_import", {
+      org: orgA,
+      batch: pipelineBatch.data,
+    })
+  ).error,
+  null,
+);
+const readStart = performance.now();
+const pipelineAll = await a.rpc("pipeline_page", { org: orgA, payload: {} });
+check(
+  !pipelineAll.error &&
+    (pipelineAll.data as { total: number }).total === baseTotal.total + 1205,
+  "Real PostgREST pipeline counts every active lead beyond 1,000",
+);
+check(
+  performance.now() - readStart < 8000,
+  "Growing-tenant pipeline read remains under the hosted eight-second limit",
+);
+const filteredStart = performance.now();
+const filteredPipeline = await a.rpc("pipeline_page", {
+  org: orgA,
+  payload: { query: `Pipeline HTTP fixture ${run} 1204` },
+});
+check(
+  !filteredPipeline.error &&
+    (filteredPipeline.data as { total: number }).total === 1,
+  "Real PostgREST pipeline search returns the requested lead",
+);
+check(
+  performance.now() - filteredStart < 8000,
+  "Growing-tenant pipeline search remains under the hosted eight-second limit",
+);
+check(
+  Boolean((await b.rpc("pipeline_page", { org: orgA, payload: {} })).error),
+  "Pipeline helper rejects another tenant",
+);
+check(
+  Boolean(
+    (await anonymous.rpc("pipeline_page", { org: orgA, payload: {} })).error,
+  ),
+  "Anonymous callers cannot read pipeline data",
+);
+const memberPipeline = await member.rpc("pipeline_page", {
+  org: orgA,
+  payload: {},
+});
+check(
+  !memberPipeline.error &&
+    (memberPipeline.data as { total: number }).total === baseTotal.total + 1205,
+  "Organization members retain their original read access",
+);
+const listReadStart = performance.now();
+const searchedList = await a
+  .from("leads")
+  .select("*, business:businesses!inner(*)", { count: "exact" })
+  .eq("organization_id", orgA)
+  .ilike("business.name", `%Pipeline HTTP fixture ${run} 1204%`)
+  .range(0, 24);
+check(
+  !searchedList.error &&
+    searchedList.count === 1 &&
+    searchedList.data?.length === 1,
+  "Joined Leads search retains exact tenant-scoped counts",
+);
+check(
+  performance.now() - listReadStart < 8000,
+  "Joined Leads search stays under the hosted time limit",
+);
+const summaryReadStart = performance.now();
+const growingSummary = await a.rpc("crm_summary", { org: orgA });
+check(
+  !growingSummary.error &&
+    (growingSummary.data as { total: number }).total === baseTotal.total + 1205,
+  "Growing-tenant dashboard totals stay accurate",
+);
+check(
+  performance.now() - summaryReadStart < 8000,
+  "Growing-tenant dashboard read stays under the hosted time limit",
+);
 console.log(
   `${passed} import, idempotency, review-approval and RLS assertions passed. Synthetic fixtures are isolated in Import Test organizations.`,
 );

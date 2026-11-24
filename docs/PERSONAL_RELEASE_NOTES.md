@@ -1,5 +1,7 @@
 This update fixes large CSV previews that exceeded hosted database time limits. The 2,000-row / 1 MiB file limit remains; existing lead totals do not cap a new batch. Duplicate detection, commit-time identity checks, source provenance, unverified hypotheses and owner permissions remain enforced.
 
+Pipeline reads and searches also avoid repeated membership checks on large workspaces while retaining tenant authorization and Trash filtering.
+
 Preview counts now include rows beyond the first 1,000, with 100-row review pages. Import applies to all valid new rows across the batch. Timeout, owner-access and missing-migration failures have distinct messages.
 
 For local Windows connections, keep Docker running and choose **Workspace → Update local database…** after updating. Hosted database updates are applied separately. Neither an application update nor the business-model roadmap copies data between local and hosted workspaces, changes pricing, starts a campaign or enables payments.
