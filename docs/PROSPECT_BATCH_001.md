@@ -52,3 +52,11 @@ For the explicitly requested dedicated local workspace/import, run `npm run batc
 Checks: `npm test`, `npm run test:rls`, `npm run test:imports`, `npm run test:e2e`, `npm run typecheck`, `npm run lint`, `npm run build`. Integration tests create synthetic fixtures in explicitly named test organizations and are blocked against remote backends. The original supplied-business workspace is not used for synthetic verified observations.
 
 Limit: 512 KB, 500 rows, 40 unique columns per file. Logical row errors and invalid records are retained. Syntax errors that prevent parsing the file are reported before preview. No spreadsheet formulas or raw HTML are executed; no CSV export is implemented. No automated research, PDF generation, qualification score, email sending or live integration is claimed.
+
+## Large hosted imports
+
+The limit is **2,000 data rows per CSV and 1 MiB per uploaded file**, not a total-lead limit. The November 24 fix retains the hosted eight-second statement timeout: preview normalizes identities once, loads this organization's existing identities once and checks only accepted in-file identities. Commit still serializes and rechecks identities; imported hypotheses stay unverified. Additive migration `20261119201405_optimize_prospect_import_preview.sql` preserves the existing signatures and privileges.
+
+The preview screen fetches both bounded 1,000-row response ranges and displays 100 rows per page. Counts cover the whole batch; explicit import covers all valid new rows across all pages. Timeout, permission and missing-schema errors have separate messages. A timed-out preview or commit rolls back that transaction.
+
+`npm run test:import-performance` creates an isolated local database, imports 796 fixtures, previews 2,000 rows with mixed duplicates/errors, commits exactly 1,800 new leads, checks repeated imports and tenant isolation, then drops only that disposable database. It enforces an eight-second timeout for each operation. Its timings are test measurements, not a production latency guarantee or real lead acquisition result.

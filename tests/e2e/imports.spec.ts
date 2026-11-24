@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
 import { assertLocalTestEnvironment } from "../integration/local-guard";
 assertLocalTestEnvironment();
@@ -270,4 +271,63 @@ test("CSV preview, mapping, import, research approval and draft preparation", as
   await expect(page.getByLabel("Pipeline status", { exact: true })).toHaveValue(
     "Researching",
   );
+});
+
+test("large previews count and paginate beyond the hosted 1000-row response limit", async ({
+  page,
+}) => {
+  const { url, key } = assertLocalTestEnvironment();
+  const db = createClient(url, key, { auth: { persistSession: false } });
+  const id = randomUUID().slice(0, 8),
+    email = `large-preview-${id}@example.test`,
+    password = `Local-test-${randomUUID()}!`;
+  expect((await db.auth.signUp({ email, password })).data.session).toBeTruthy();
+  const org = (
+    await db.rpc("create_organization", {
+      organization_name: `Synthetic large preview ${id}`,
+    })
+  ).data!;
+  const rows = Array.from({ length: 1205 }, (_, i) => ({
+    row_number: i + 2,
+    raw: { name: `Preview fixture ${id} ${i}` },
+    payload: {
+      business_name: `Preview fixture ${id} ${i}`,
+      industry: "Synthetic services",
+      location: "Test City PA",
+      research_priority: "C",
+      audit_hypothesis_not_verified: "Research required",
+    },
+    errors: [],
+  }));
+  const batch = await db.rpc("preview_prospect_import", {
+    org,
+    batch_label: "Synthetic large preview",
+    file_name: "synthetic.csv",
+    file_fingerprint: id.repeat(8),
+    field_mapping: {},
+    rows,
+  });
+  expect(batch.error).toBeNull();
+  await page.goto("/login");
+  await page.getByLabel("Email address").fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Enter your workspace" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.goto(`/dashboard/imports/${batch.data}`);
+  await expect(page.getByText("1205 valid", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("navigation", { name: "Import preview pages" }),
+  ).toContainText("Showing 1–100 of 1205 rows");
+  await page.getByRole("link", { name: "Next preview rows" }).click();
+  await expect(
+    page.getByRole("navigation", { name: "Import preview pages" }),
+  ).toContainText("Showing 101–200 of 1205 rows");
+  await page.goto(`/dashboard/imports/${batch.data}?page=13`);
+  await expect(
+    page.getByRole("navigation", { name: "Import preview pages" }),
+  ).toContainText("Showing 1201–1205 of 1205 rows");
+  await expect(
+    page.getByText(`Preview fixture ${id} 1204`, { exact: true }),
+  ).toBeVisible();
+  expect((await db.rpc("crm_summary", { org })).data.total).toBe(0);
 });

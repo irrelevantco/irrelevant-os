@@ -15,3 +15,7 @@ The next commercial hypothesis is a flat-rate company installation/license plus 
 $750 projects and $10k–$25k/year agreements are pricing hypotheses to validate through scoped paid pilots, not proven savings or warranted ROI. A flat software license and ongoing migration/support engagement can be priced separately. Hosting, provider usage, support hours, implementation scope and cancellation/export terms must be explicit. Never imply a subscription replaces a signed annual agreement.
 
 Keep OpenStreetMap attribution and ODbL obligations with map-derived data, including when redistributing a database. A software license does not make that source data exclusive. Do not advertise vendor integrations, payroll processing, employee scheduling or production management until implemented and tested.
+
+## Guided operator direction
+
+The November 24 proposal in [OPERATOR_BUSINESS_MODEL.md](OPERATOR_BUSINESS_MODEL.md) makes iR Agent the entry point for one business and a scoped growth workflow, with implementation and ongoing support. It uses the public Foundable/Ted operator pattern as a reference while retaining the existing independent application, tenant controls and approval boundaries. Alternative HR and production templates remain later work.

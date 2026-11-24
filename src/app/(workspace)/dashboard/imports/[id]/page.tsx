@@ -10,13 +10,22 @@ import { CommitImportForm } from "@/components/research/import-form";
 export const metadata = { title: "Batch results" };
 export default async function Batch({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ page?: string }>;
 }) {
   const { id } = await params;
+  const query = await searchParams;
+  const requestedPage = z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(20)
+    .safeParse(query.page ?? 1);
   if (!z.uuid().safeParse(id).success) notFound();
   const { db, organization, role } = await requireContext();
-  const [batch, rows, summary] = await Promise.all([
+  const [batch, firstRows, lastRows, summary] = await Promise.all([
     db
       .from("import_batches")
       .select("*")
@@ -28,13 +37,26 @@ export default async function Batch({
       .select("*")
       .eq("batch_id", id)
       .eq("organization_id", organization.id)
-      .order("row_number"),
+      .order("row_number")
+      .range(0, 999),
+    db
+      .from("import_rows")
+      .select("*")
+      .eq("batch_id", id)
+      .eq("organization_id", organization.id)
+      .order("row_number")
+      .range(1000, 1999),
     importSummary(id),
   ]);
-  if (batch.error || rows.error)
+  if (batch.error || firstRows.error || lastRows.error)
     throw new Error("Could not load import preview.");
   if (!batch.data) notFound();
-  const counts = rows.data.reduce<Record<string, number>>(
+  const rows = [...firstRows.data, ...lastRows.data];
+  const pages = Math.max(1, Math.ceil(rows.length / 100));
+  const page = Math.min(requestedPage.success ? requestedPage.data : 1, pages);
+  const start = (page - 1) * 100;
+  const visibleRows = rows.slice(start, start + 100);
+  const counts = rows.reduce<Record<string, number>>(
     (a, row) => ({ ...a, [row.status]: (a[row.status] ?? 0) + 1 }),
     {},
   );
@@ -84,6 +106,32 @@ export default async function Batch({
           </Link>
         </Card>
       )}
+      <nav
+        aria-label="Import preview pages"
+        className="mb-4 flex flex-wrap items-center gap-4 text-sm"
+      >
+        <p>
+          Showing {rows.length ? start + 1 : 0}–
+          {Math.min(start + 100, rows.length)} of {rows.length} rows · Page{" "}
+          {page} of {pages}
+        </p>
+        {page > 1 && (
+          <Link
+            className="text-primary underline"
+            href={`/dashboard/imports/${id}?page=${page - 1}`}
+          >
+            Previous preview rows
+          </Link>
+        )}
+        {page < pages && (
+          <Link
+            className="text-primary underline"
+            href={`/dashboard/imports/${id}?page=${page + 1}`}
+          >
+            Next preview rows
+          </Link>
+        )}
+      </nav>
       <Card className="mb-6">
         <div className="relative overflow-x-auto">
           <table className="w-full min-w-[850px] text-left text-sm">
@@ -103,7 +151,7 @@ export default async function Batch({
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {rows.data.map((row) => {
+              {visibleRows.map((row) => {
                 const payload = (row.payload ?? row.raw_row) as Record<
                   string,
                   unknown
@@ -174,6 +222,10 @@ export default async function Batch({
       </Card>
       {batch.data.status === "preview" && role === "owner" && (
         <Card className="p-5">
+          <p className="mb-4 text-sm text-muted-foreground">
+            Import applies to all valid new rows in this batch, across every
+            preview page.
+          </p>
           <CommitImportForm batch={id} />
         </Card>
       )}

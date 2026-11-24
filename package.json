@@ -28,7 +28,8 @@
     "test:agents": "node --env-file=.env.local --import tsx tests/integration/agents.ts",
     "test:upgrade": "node --env-file=.env.local --import tsx tests/integration/local-upgrade.ts",
     "test:acquisition": "node --env-file=.env.local --import tsx tests/integration/acquisition.ts && node --env-file=.env.local --import tsx tests/integration/acquisition-clock.ts",
-    "test:engine": "node --env-file=.env.local --import tsx tests/integration/engine.ts"
+    "test:engine": "node --env-file=.env.local --import tsx tests/integration/engine.ts",
+    "test:import-performance": "node --env-file=.env.local --import tsx tests/integration/import-performance.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "4.0.121",

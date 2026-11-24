@@ -12,6 +12,7 @@ import {
   parseCsv,
   previewRows,
 } from "@/lib/imports/csv";
+import { importFailure } from "@/lib/imports/errors";
 import type { Mapping } from "@/lib/imports/fields";
 import { draftSchema, PILLARS, reviewSchema } from "@/lib/reviews";
 import type { ActionState } from "@/lib/domain";
@@ -93,10 +94,7 @@ export async function previewImport(
       field_mapping: mapping,
       rows: rows as unknown as Json,
     });
-    if (error || !data)
-      throw new Error(
-        "Preview could not be saved. Verify your organization access and database migration.",
-      );
+    if (error || !data) throw new Error(importFailure(error, "preview"));
     batchId = data;
   } catch (error) {
     return {
@@ -123,8 +121,7 @@ export async function commitImport(
   });
   if (error)
     return {
-      error:
-        "Import failed. No uncommitted rows should be assumed saved. Check access and retry.",
+      error: importFailure(error, "import"),
     };
   revalidatePath("/dashboard", "layout");
   return {
