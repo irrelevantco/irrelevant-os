@@ -1,3 +1,13 @@
+This update aligns the workspace shell with iRRELEVANT CUT: a fixed vertical sidebar from 768 pixels upward, grouped Workspace / Growth / Automation / Workspace tools navigation, sidebar business search, a compact section header and stronger sans-serif headings. Half-screen Windows windows keep the sidebar instead of the former horizontally scrolling tab bar.
+
+On phones, open the menu beside the current section to access the same vertical navigation. The drawer supports Escape, backdrop dismissal, keyboard focus, closing after navigation and safe resizing back to desktop. Opening and closing it preserves the current form. Long navigation lists scroll within the sidebar while workspace identity remains visible.
+
+Use **Workspace → Check for app updates…** in Windows, then download and install after saving edits. Reload the hosted app for the web update. No database migration is required. This update aligns the visual style; the CUT and OS applications remain separate products.
+
+---
+
+Previous startup and motion update:
+
 This update adds the neon iR startup splash to the web app and refreshes the Windows startup screen to match. The web splash releases after client hydration; the desktop progress bar follows actual connection, server and workspace startup stages. No artificial percentage or minimum waiting time is added.
 
 Workspace tabs show a pending indicator while the router is working, followed by a gentle page entrance. Buttons have subtle press feedback. Reduced-motion preferences disable movement, and startup artwork never captures clicks or focus. Navigation does not remount the shared workspace or replay the full-screen splash. Server-rendered sign-in remains usable with JavaScript disabled.

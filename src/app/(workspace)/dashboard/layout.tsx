@@ -1,6 +1,8 @@
 import { headers } from "next/headers";
 import { AcquisitionRunner } from "@/components/acquisition/runner";
-import { LogOut, Search } from "lucide-react";
+import { LogOut, Plus } from "lucide-react";
+import Link from "next/link";
+import { WorkspaceBreadcrumb } from "@/components/workspace-breadcrumb";
 import { requireContext } from "@/lib/context";
 import { Sidebar } from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
@@ -12,7 +14,7 @@ export default async function WorkspaceLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { db, user, organization, memberships, role } = await requireContext();
+  const { db, organization, memberships, role } = await requireContext();
   const automatic =
     role === "owner"
       ? await db.rpc("acquisition_state", {
@@ -32,8 +34,7 @@ export default async function WorkspaceLayout({
     (automatic?.data as { settings?: { enabled?: boolean } } | null)?.settings
       ?.enabled === true;
   return (
-    <div className="min-h-screen">
-      <Sidebar organization={organization.name} />
+    <div className="workspace-shell min-h-screen">
       {role === "owner" && automaticEnabled && (
         <AcquisitionRunner
           desktop={
@@ -43,34 +44,15 @@ export default async function WorkspaceLayout({
           }
         />
       )}
-      <div className="lg:ml-60">
-        <header className="flex min-h-20 flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4 sm:px-9">
-          <form
-            action="/dashboard/leads"
-            className="flex items-center gap-2 text-muted-foreground"
-          >
-            <Search className="size-4" />
-            <label htmlFor="workspace-search" className="sr-only">
-              Search businesses
-            </label>
-            <input
-              id="workspace-search"
-              name="q"
-              type="search"
-              placeholder="Find a business…"
-              maxLength={160}
-              className="h-8 w-40 bg-transparent text-base sm:text-sm outline-none placeholder:text-muted-foreground sm:w-52"
-            />
-            <button
-              type="submit"
-              className="eyebrow rounded border border-border px-1.5 py-1 text-[9px] hover:text-primary"
-            >
-              Search
-            </button>
-          </form>
-          <div className="flex items-center gap-3">
+      <div className="min-w-0 md:ml-[216px]">
+        <header className="flex min-h-[72px] flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3 md:px-7">
+          <div className="flex min-w-0 items-center gap-3">
+            <Sidebar organization={organization.name} />
+            <WorkspaceBreadcrumb />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             {memberships.length > 1 && (
-              <form action={switchOrganization} className="flex gap-2">
+              <form action={switchOrganization} className="flex min-w-0 gap-2">
                 <label htmlFor="org-switch" className="sr-only">
                   Active organization
                 </label>
@@ -78,7 +60,7 @@ export default async function WorkspaceLayout({
                   id="org-switch"
                   name="organization_id"
                   defaultValue={organization.id}
-                  className="max-w-36 rounded border border-border bg-card p-1.5 text-base sm:text-xs"
+                  className="max-w-32 rounded border border-border bg-card p-1.5 text-base sm:text-xs"
                 >
                   {memberships.map((m) => (
                     <option key={m.organization.id} value={m.organization.id}>
@@ -91,15 +73,19 @@ export default async function WorkspaceLayout({
                 </Button>
               </form>
             )}
-            <span className="hidden max-w-44 truncate text-xs text-muted-foreground xl:block">
-              {user.email}
+            <span className="hidden items-center gap-2 text-xs text-muted-foreground xl:inline-flex">
+              <span
+                aria-hidden="true"
+                className="size-1.5 rounded-full bg-primary"
+              />
+              Private workspace
             </span>
-            <div
-              className="flex size-8 items-center justify-center rounded-full border border-border bg-secondary text-xs font-medium"
-              aria-hidden="true"
-            >
-              {(user.email ?? "U").slice(0, 1).toUpperCase()}
-            </div>
+            <Button asChild size="sm">
+              <Link href="/dashboard/leads/new">
+                <Plus />
+                New business
+              </Link>
+            </Button>
             <form action={signOut}>
               <Button
                 size="icon"
@@ -114,11 +100,11 @@ export default async function WorkspaceLayout({
         </header>
         <main
           id="main"
-          className="mx-auto max-w-[1600px] px-5 py-8 sm:px-9 sm:py-10"
+          className="mx-auto max-w-[1600px] px-5 py-7 md:px-7 md:py-8"
         >
           <WorkspaceTransition>{children}</WorkspaceTransition>
         </main>
-        <footer className="mx-5 flex flex-wrap justify-between gap-2 border-t border-border py-5 text-[10px] text-muted-foreground sm:mx-9">
+        <footer className="mx-5 flex flex-wrap justify-between gap-2 border-t border-border py-5 text-[10px] text-muted-foreground md:mx-7">
           <span>iRRELEVANT OS / Build your position.</span>
           <span>
             Private workspace · Times shown in Eastern Time · Map data:{" "}

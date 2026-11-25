@@ -1,3 +1,4 @@
+import { navigateWorkspace } from "./navigation";
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { assertLocalTestEnvironment } from "../integration/local-guard";
@@ -79,7 +80,7 @@ test("authentication, CRM, follow-ups, tenant switching and sign-out", async ({
     .getByRole("button", { name: "Save business", exact: true })
     .click();
   await expect(page.getByText("212-555-0100", { exact: true })).toBeVisible();
-  await page.getByRole("link", { name: "Overview", exact: true }).click();
+  await navigateWorkspace(page, "Overview");
   await expect(
     page
       .getByRole("heading", { name: "Follow-ups due" })
@@ -104,7 +105,7 @@ test("authentication, CRM, follow-ups, tenant switching and sign-out", async ({
     path: testInfo.outputPath("dashboard.png"),
     fullPage: true,
   });
-  await page.getByRole("link", { name: "Leads", exact: true }).click();
+  await navigateWorkspace(page, "Leads");
   await page.getByLabel("Business name", { exact: true }).fill(run);
   await page
     .getByLabel("Pipeline status", { exact: true })
@@ -113,13 +114,13 @@ test("authentication, CRM, follow-ups, tenant switching and sign-out", async ({
   await expect(
     page.getByRole("link", { name: new RegExp(business) }).first(),
   ).toBeVisible();
-  await page.getByRole("link", { name: "Pipeline", exact: true }).click();
+  await navigateWorkspace(page, "Pipeline");
   await expect(
     page.getByRole("heading", { name: business, exact: true }),
   ).toBeVisible();
-  await page.getByRole("link", { name: "Activity", exact: true }).click();
+  await navigateWorkspace(page, "Activity");
   await expect(page.getByText("created a lead note")).toBeVisible();
-  await page.getByRole("link", { name: "Settings", exact: true }).click();
+  await navigateWorkspace(page, "Settings");
   const second = page
     .getByRole("heading", { name: "Create another organization" })
     .locator("..");

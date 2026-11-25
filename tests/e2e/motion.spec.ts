@@ -1,3 +1,4 @@
+import { openWorkspaceNavigation } from "./navigation";
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { assertLocalTestEnvironment } from "../integration/local-guard";
@@ -94,7 +95,13 @@ test("pending navigation follows real routing and the splash does not replay on 
     .click();
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.locator("[data-startup-splash]")).toBeHidden();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth <=
+        document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
   let release!: () => void;
   const destination = new Promise<void>((resolve) => {
     release = resolve;
@@ -103,6 +110,7 @@ test("pending navigation follows real routing and the splash does not replay on 
     await destination;
     await route.continue();
   });
+  await openWorkspaceNavigation(page);
   const link = page
     .getByRole("navigation", { name: "Workspace navigation" })
     .getByRole("link", { name: "Research", exact: true });
@@ -113,16 +121,31 @@ test("pending navigation follows real routing and the splash does not replay on 
       "true",
     );
     await expect(link.getByRole("status")).toHaveText("Opening Research…");
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth <=
+          document.documentElement.clientWidth,
+      ),
+    ).toBe(true);
     await expect(page.locator("[data-startup-splash]")).toBeHidden();
     release();
     await expect(page).toHaveURL(/\/dashboard\/research$/);
+    await openWorkspaceNavigation(page);
     await expect(link).toHaveAttribute("aria-current", "page");
     await expect(link.locator("[data-pending]")).toHaveAttribute(
       "data-pending",
       "false",
     );
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    const menu = page.getByRole("dialog", { name: "Workspace menu" });
+    if (await menu.isVisible())
+      await menu
+        .getByRole("button", {
+          name: "Close workspace navigation",
+          exact: true,
+        })
+        .click();
     await page.screenshot({
       path: info.outputPath("workspace-ready.png"),
       fullPage: true,

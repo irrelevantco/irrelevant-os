@@ -1,3 +1,4 @@
+import { navigateWorkspace } from "./navigation";
 import { test, expect } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
@@ -27,7 +28,7 @@ test("CSV preview, mapping, import, research approval and draft preparation", as
   await expect(
     page.getByRole("heading", { name: "Make the next move." }),
   ).toBeVisible();
-  await page.getByRole("link", { name: "Imports", exact: true }).click();
+  await navigateWorkspace(page, "Imports");
   const csv = `Company,City,Sector,URL,Phone,Priority,Hypothesis,Email\n${name},Erie PA,Cleaning,https://${run}.example.test,814-555-0100,A,Unverified synthetic research question,public@${run}.example.test\n${name.toUpperCase()},erie pa,Cleaning,https://www.${run}.example.test/path,,A,Duplicate synthetic row,public@${run}.example.test\nX,Erie PA,Cleaning,javascript:alert(1),,B,Invalid synthetic row,\nSynthetic Other ${run},Warren PA,HVAC,,814-555-0101,C,Another unverified question,`;
   await page.getByLabel("CSV file").setInputFiles({
     name: "synthetic-batch.csv",
@@ -144,7 +145,7 @@ test("CSV preview, mapping, import, research approval and draft preparation", as
   await expect
     .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
     .toBeLessThanOrEqual(page.viewportSize()!.width);
-  await page.getByRole("link", { name: "iR Agent", exact: true }).click();
+  await navigateWorkspace(page, "iR Agent");
   await page
     .getByRole("link", { name: "Advanced preparation controls", exact: true })
     .click();

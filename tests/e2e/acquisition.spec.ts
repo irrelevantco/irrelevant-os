@@ -1,3 +1,4 @@
+import { navigateWorkspace } from "./navigation";
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { assertLocalTestEnvironment } from "../integration/local-guard";
@@ -37,9 +38,7 @@ test("agreed appointments update opportunity value without a page reload", async
     .getByRole("heading", { name: "Open opportunity value", exact: true })
     .locator("..");
   await expect(valueCard).toContainText("$0");
-  await page
-    .getByRole("link", { name: "Calls & meetings", exact: true })
-    .click();
+  await navigateWorkspace(page, "Calls & meetings");
   await page
     .getByLabel("Appointment prospect")
     .selectOption({ label: business });
@@ -93,7 +92,7 @@ test("agreed appointments update opportunity value without a page reload", async
     path: testInfo.outputPath("appointments.png"),
     fullPage: true,
   });
-  await page.getByRole("link", { name: "Connections", exact: true }).click();
+  await navigateWorkspace(page, "Connections");
   await expect(
     page.getByText(
       "Not connected. No Gmail sends or Google events are active.",
@@ -106,7 +105,7 @@ test("agreed appointments update opportunity value without a page reload", async
   await expect(
     page.getByRole("checkbox", { name: /Enable hourly discovery/ }),
   ).not.toBeChecked();
-  await page.getByRole("link", { name: "Settings", exact: true }).click();
+  await navigateWorkspace(page, "Settings");
   await expect(
     page.getByText("Phone hosting is not connected yet.", { exact: true }),
   ).toBeVisible();

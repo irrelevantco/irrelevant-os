@@ -26,6 +26,10 @@ The default lightweight development profile uses real PostgreSQL 15, Supabase Au
 
 The PWA manifest supports installation. The service worker provides a static offline message on network failure; it never writes CRM data or authenticated responses to caches. The application remains online-only.
 
+## Workspace shell
+
+The private workspace uses CUT-style grouped vertical navigation. From 768px upward, a fixed 216px sidebar contains business search, independently scrolling navigation and a pinned organization footer. Smaller screens use a native modal dialog drawer with the same links, browser focus containment, Escape/backdrop dismissal, body scroll locking and close-on-route/desktop-resize behavior. Sidebar location and breadcrumb labels share one navigation definition. Workspace typography is scoped so public and authentication layouts keep their existing styling. No CRM, authorization, billing or automation behavior changes are required for the shell.
+
 ## Loading and motion
 
 The root layout renders a decorative, non-interactive branded startup layer once per document. Hydration releases it with a short fade (immediately for reduced motion); it does not wait for a pretend percentage or add a minimum startup delay. A no-script rule and an eight-second CSS fail-open prevent the layer from hiding server-rendered content if scripts cannot run. The shared route loading artwork is announced as status; decorative startup content is excluded from the accessibility tree.

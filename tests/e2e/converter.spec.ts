@@ -1,3 +1,4 @@
+import { navigateWorkspace } from "./navigation";
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -21,7 +22,7 @@ test("XLSX conversion stays local; reviewed prospects use the real CRM import", 
     .getByLabel("Organization name")
     .fill(`Converter ${testInfo.project.name} ${run}`);
   await page.getByRole("button", { name: "Create organization" }).click();
-  await page.getByRole("link", { name: "Data converter", exact: true }).click();
+  await navigateWorkspace(page, "Data converter");
   const posts: string[] = [];
   page.on("request", (request) => {
     if (request.method() === "POST") posts.push(request.url());
@@ -123,7 +124,7 @@ test("XLSX conversion stays local; reviewed prospects use the real CRM import", 
     .getByRole("button", { name: "Import valid prospects", exact: true })
     .click();
   await expect(page.getByText("1 imported", { exact: true })).toBeVisible();
-  await page.getByRole("link", { name: "Leads", exact: true }).click();
+  await navigateWorkspace(page, "Leads");
   await expect(
     page
       .getByRole("link", { name: new RegExp(`Synthetic XLSX ${run}`) })
