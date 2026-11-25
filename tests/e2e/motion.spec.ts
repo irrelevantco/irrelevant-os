@@ -94,6 +94,7 @@ test("pending navigation follows real routing and the splash does not replay on 
     .click();
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.locator("[data-startup-splash]")).toBeHidden();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   let release!: () => void;
   const destination = new Promise<void>((resolve) => {
     release = resolve;
@@ -112,6 +113,7 @@ test("pending navigation follows real routing and the splash does not replay on 
       "true",
     );
     await expect(link.getByRole("status")).toHaveText("Opening Research…");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     await expect(page.locator("[data-startup-splash]")).toBeHidden();
     release();
     await expect(page).toHaveURL(/\/dashboard\/research$/);
