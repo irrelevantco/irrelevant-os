@@ -5,6 +5,13 @@ export async function openWorkspaceNavigation(page: Page) {
     name: "Open workspace navigation",
     exact: true,
   });
+  // Server actions may still be redirecting from onboarding. Wait for the
+  // responsive shell before choosing the desktop links or phone menu.
+  await expect(
+    page
+      .getByRole("complementary", { name: "Workspace sidebar", exact: true })
+      .or(trigger),
+  ).toBeVisible();
   if (
     (await trigger.isVisible()) &&
     !(await page
