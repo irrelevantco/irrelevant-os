@@ -26,6 +26,12 @@ The default lightweight development profile uses real PostgreSQL 15, Supabase Au
 
 The PWA manifest supports installation. The service worker provides a static offline message on network failure; it never writes CRM data or authenticated responses to caches. The application remains online-only.
 
+## Loading and motion
+
+The root layout renders a decorative, non-interactive branded startup layer once per document. Hydration releases it with a short fade (immediately for reduced motion); it does not wait for a pretend percentage or add a minimum startup delay. A no-script rule and an eight-second CSS fail-open prevent the layer from hiding server-rendered content if scripts cannot run. The shared route loading artwork is announced as status; decorative startup content is excluded from the accessibility tree.
+
+Sidebar pending indicators use Next.js `useLinkStatus` inside each Link, so completion and cancellation follow the router. The stable workspace container uses the Web Animations API for route entrance without keyed subtree remounts that could reset forms or dialogs. CSS and native Windows startup both honor reduced-motion preferences. Native desktop progress still represents actual main-process readiness stages, with no new renderer privileges. No animation library, external asset host, database migration or private-page caching is introduced. A free host's wake page precedes application HTML and cannot be covered by this splash.
+
 ## Remaining module contracts
 
 - Discovery: provider interface `discover(query, cursor, budget)` returns normalized businesses plus evidence/provenance; provider capabilities declare permitted fields, licensing, attribution and rate limits. No protected-platform scraping.

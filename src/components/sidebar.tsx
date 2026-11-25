@@ -19,6 +19,7 @@ import {
 import { APP_VERSION } from "@/lib/version";
 import { Brand } from "./brand";
 import { cn } from "@/lib/utils";
+import { NavigationPending } from "./navigation-pending";
 const items = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/leads", label: "Leads", icon: UsersRound },
@@ -72,7 +73,7 @@ export function Sidebar({ organization }: { organization: string }) {
               href={href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex shrink-0 items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
+                "workspace-nav-link flex shrink-0 items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors duration-150",
                 active
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-secondary hover:text-foreground",
@@ -80,9 +81,7 @@ export function Sidebar({ organization }: { organization: string }) {
             >
               <Icon className="size-4" strokeWidth={1.6} />
               {label}
-              {active && (
-                <span className="ml-auto hidden size-1 rounded-full bg-primary lg:block" />
-              )}
+              <NavigationPending label={label} />
             </Link>
           );
         })}

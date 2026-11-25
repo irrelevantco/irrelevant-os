@@ -1,4 +1,16 @@
-This update fixes large CSV previews that exceeded hosted database time limits. The 2,000-row / 1 MiB file limit remains; existing lead totals do not cap a new batch. Duplicate detection, commit-time identity checks, source provenance, unverified hypotheses and owner permissions remain enforced.
+This update adds the neon iR startup splash to the web app and refreshes the Windows startup screen to match. The web splash releases after client hydration; the desktop progress bar follows actual connection, server and workspace startup stages. No artificial percentage or minimum waiting time is added.
+
+Workspace tabs show a pending indicator while the router is working, followed by a gentle page entrance. Buttons have subtle press feedback. Reduced-motion preferences disable movement, and startup artwork never captures clicks or focus. Navigation does not remount the shared workspace or replay the full-screen splash. Server-rendered sign-in remains usable with JavaScript disabled.
+
+The hosted app receives this update by reloading. Windows users can choose **Workspace → Check for app updates…**, download, then install and restart after saving changes. This UI-only update requires no database migration and does not change campaigns, billing or authorization.
+
+Free Render hosting can show its own wake screen before the app responds; the application splash cannot replace that hosting screen. Phone access remains the hosted HTTPS web app, including Safari's Add to Home Screen option.
+
+---
+
+Previous import and pipeline fixes:
+
+Large CSV previews no longer exceed hosted database time limits. The 2,000-row / 1 MiB file limit remains; existing lead totals do not cap a new batch. Duplicate detection, commit-time identity checks, source provenance, unverified hypotheses and owner permissions remain enforced.
 
 Pipeline reads and searches also avoid repeated membership checks on large workspaces while retaining tenant authorization and Trash filtering.
 

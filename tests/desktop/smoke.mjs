@@ -116,6 +116,18 @@ try {
     await expect(
       window.getByRole("progressbar", { name: "Workspace startup" }),
     ).toBeVisible();
+    await expect(
+      window.getByRole("heading", { name: "Build your position." }),
+    ).toBeVisible();
+    await expect(window.locator(".mark svg")).toBeVisible();
+    await window.emulateMedia({ reducedMotion: "reduce" });
+    if (
+      (await window
+        .locator(".startup")
+        .evaluate((element) => getComputedStyle(element).animationName)) !==
+      "none"
+    )
+      throw Error("Desktop startup ignored reduced-motion preference.");
     releaseStartupHealth();
   }
   await expect(

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { PwaRegistration } from "@/components/pwa";
+import { StartupSplash } from "@/components/startup-splash";
 export const metadata: Metadata = {
   title: {
     default: "iRRELEVANT OS — Build your position.",
@@ -28,6 +29,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <StartupSplash />
+        <noscript>
+          <style>{`.startup-splash { display: none !important; }`}</style>
+        </noscript>
         <a
           href="#main"
           className="sr-only z-50 bg-primary p-3 text-primary-foreground focus:not-sr-only focus:fixed"
